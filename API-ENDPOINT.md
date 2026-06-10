@@ -53,6 +53,7 @@
       "fullName": "string",
       "email": "string",
       "phone": "string",
+      "role": "string",
       "balance": 1000,
       "environmentalImpact": 1000,
     }
@@ -90,6 +91,7 @@
         "fullName": "string",
         "email": "string",
         "phone": "string",
+        "role": "string",
       },
       {
         "id": 1,
@@ -97,8 +99,14 @@
         "fullName": "string",
         "email": "string",
         "phone": "string",
+        "role": "string",
       }
-    ]
+    ],
+    "pagination": {
+      "page": 1,
+      "size": 10,
+      "totalPage": 10
+    }
   }
   ```
 - `/users` (POST)
@@ -110,6 +118,7 @@
     "email": "string",
     "phone": "string",
     "password": "string",
+    "role": "string",
   }
   ```
   - Response Body (success):
@@ -133,6 +142,7 @@
       "fullName": "string",
       "email": "string",
       "phone": "string",
+      "role": "string",
     }
   }
   ```
@@ -145,6 +155,7 @@
     "email": "string",
     "phone": "string",
     "password": "string",
+    "role": "string",
   }
   ```
   - Response Body (success):
