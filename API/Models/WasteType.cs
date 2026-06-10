@@ -13,7 +13,7 @@ public partial class WasteType
 
     public decimal PointTariff { get; set; }
 
-    public string Co2factor { get; set; } = null!;
+    public decimal Co2factor { get; set; }
 
     public bool IsActive { get; set; }
 

@@ -74,7 +74,7 @@ public partial class EcoPoinContext : DbContext
                 .HasForeignKey(d => d.OfficerId)
                 .HasConstraintName("FK_Deposits_Officers");
 
-            entity.HasOne(d => d.Resident).WithMany(p => p.DepositResidents)
+            entity.HasOne(d => d.Resident).WithMany(p => p.Deposits)
                 .HasForeignKey(d => d.ResidentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Deposits_Residents");
@@ -200,8 +200,7 @@ public partial class EcoPoinContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Co2factor)
-                .HasMaxLength(64)
-                .IsUnicode(false)
+                .HasColumnType("decimal(18, 0)")
                 .HasColumnName("CO2Factor");
             entity.Property(e => e.Code)
                 .HasMaxLength(64)

@@ -1,5 +1,7 @@
 using EcoPoinAPI;
+using EcoPoinAPI.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -9,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.AddDbContext<EcoPoinContext>();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -41,6 +44,15 @@ builder.Services.AddSwaggerGen(opt =>
         }
     });
     opt.OperationFilter<SecFilter>();
+});
+builder.Services.Configure<ApiBehaviorOptions>(opt =>
+{
+    opt.InvalidModelStateResponseFactory = ctx =>
+    {
+        var allErrs = ctx.ModelState.Where(e => e.Value?.Errors.Count > 0).SelectMany(e => e.Value.Errors).Select(e => e.ErrorMessage).ToList();
+        var combinedMsg = string.Join(", ", allErrs);
+        return new BadRequestObjectResult(new { message = combinedMsg });
+    };
 });
 
 var app = builder.Build();
