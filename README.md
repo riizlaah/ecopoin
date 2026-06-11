@@ -1,3 +1,3 @@
 # EcoPoin
 
-API: ~4.5 Jam
+API: ~5 Jam (4 jam ngoding, 1 jam ngefix bug)
