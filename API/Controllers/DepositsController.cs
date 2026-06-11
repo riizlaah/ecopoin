@@ -149,7 +149,7 @@ namespace EcoPoinAPI.Controllers
 
         [HttpPut("{id}/verify")]
         [Authorize(Roles = "officer")]
-        public async Task<ActionResult> Verify(int id, [FromForm] int wasteTypeId, [FromForm] decimal estimatedWeight, [FromForm] bool verified, IFormFile photo, [FromForm] string? rejectionReason = null)
+        public async Task<ActionResult> Verify(int id, [FromForm] int wasteTypeId, [FromForm] decimal actualWeight, [FromForm] bool verified, IFormFile photo, [FromForm] string? rejectionReason = null)
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             if (photo != null)
@@ -162,19 +162,29 @@ namespace EcoPoinAPI.Controllers
             {
                 if (rejectionReason == null || rejectionReason.Trim() == "") return Helper.err("Rejection reason can't be empty");
             }
-            if (estimatedWeight < 0m) return Helper.err("Estimated weight not valid");
+            if (actualWeight < 0m) return Helper.err("Actual weight not valid");
             if (await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
             var rec = await dbc.Deposits.FindAsync(id);
             if (rec == null) return Helper.err("Deposit not found", 404);
             if (rec.Status != "Pending") return Helper.err("Reviewed Deposit can't be updated");
             rec.WasteTypeId = wasteTypeId;
-            rec.EstimatedWeight = estimatedWeight;
+            rec.ActualWeight = actualWeight;
             if(photo != null)
             {
                 rec.PhotoPath = await Helper.UploadFile(photo, uploadDir, rec.PhotoPath);
             }
             rec.Status = verified ? "Verified" : "Rejected";
             if(!verified) rec.RejectionReason = rejectionReason;
+            else
+            {
+                dbc.DepositPoints.Add(new DepositPoint
+                {
+                    ResidentId = rec.ResidentId,
+                    Amount = actualWeight * rec.WasteType.PointTariff,
+                    PointTariff = rec.WasteType.PointTariff,
+                    DepositId = rec.Id,
+                });
+            }
             await dbc.SaveChangesAsync();
             return Helper.msg("Deposit updated successfully");
         }

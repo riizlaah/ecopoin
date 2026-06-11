@@ -456,6 +456,38 @@
     ]
   }
   ```
+- `/vouchers/history` (GET)
+  - Request Body (empty):
+  ```json
+  ```
+  - Response Body (success):
+  ```json
+  {
+    "message": "Voucher History fetched successfully",
+    "data": [
+      {
+        "id": 0,
+        "name": "string",
+        "code": "string",
+        "pointCost": 1000,
+        "isUsed": false,
+        "totalPointsRedeemed": 100000,
+        "isActive": true,
+        "updatedAt": "2026-01-01T00:00:00Z"
+      },
+      {
+        "id": 1,
+        "name": "string",
+        "code": "string",
+        "pointCost": 1000,
+        "isUsed": true,
+        "totalPointsRedeemed": 100000,
+        "isActive": true,
+        "updatedAt": "2026-01-01T00:00:00Z"
+      },
+    ]
+  }
+  ```
 - `/vouchers/{code}/detail` (GET)
   - Request Body (empty):
   ```json
@@ -497,14 +529,14 @@
     "data": null
   }
   ```
-- `/vouchers/{id}/exchange` (POST)
+- `/vouchers/{id}/use` (POST)
   - Request Body (empty):
   ```json
   ```
   - Response Body (success):
   ```json
   {
-    "message": "Voucher exchanged successfully",
+    "message": "Voucher used",
     "data": null
   }
   ```

@@ -79,6 +79,15 @@ namespace EcoPoinAPI
             if (size < 1) return ("Size not valid", null, null);
             if (page < 1) return ("Page not valid", null, null);
             var totalPage = (int)Math.Ceiling((decimal)query.Count() / size);
+            var datas = query.Select(selector).AsQueryable().Skip((page - 1) * size).Take(size).ToList();
+            return ("", datas, (page, totalPage));
+        }
+
+        public static (string error, List<TRes>? results, (int current, int total)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, int, TRes> selector, int page, int size)
+        {
+            if (size < 1) return ("Size not valid", null, null);
+            if (page < 1) return ("Page not valid", null, null);
+            var totalPage = (int)Math.Ceiling((decimal)query.Count() / size);
             query = query.Skip((page - 1) * size).Take(size);
             var datas = query.Select(selector).ToList();
             return ("", datas, (page, totalPage));
@@ -94,5 +103,17 @@ namespace EcoPoinAPI
             }
             return uniqName;
         }
+
+        public static string RandStr(int length = 8)
+        {
+            var random = new Random();
+            var chars = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var str = "";
+            for(var i = 0; i < length; i++)
+            {
+                str += chars[random.Next(chars.Length)];
+            }
+            return str;
+         }
     }
 }
