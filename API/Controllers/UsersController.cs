@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 
 namespace EcoPoinAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ecopoin-api-v1/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
@@ -34,6 +34,7 @@ namespace EcoPoinAPI.Controllers
             return Helper.json(new
             {
                 id = user.Id,
+                fullName = user.FullName,
                 username = user.Username,
                 role = user.Role,
                 token = GenerateToken(user.Id, user.Role)
@@ -146,7 +147,7 @@ namespace EcoPoinAPI.Controllers
                 role = u.Role
             }, page, size);
             if (error != "") return Helper.err(error);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "Users fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Users fetched successfully");
         }
 
         [HttpPost]

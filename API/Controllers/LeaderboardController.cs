@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace EcoPoinAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ecopoin-api-v1/[controller]")]
     [ApiController]
     public class LeaderboardController : ControllerBase
     {
@@ -31,7 +31,7 @@ namespace EcoPoinAPI.Controllers
                 currentBalance = rec.Balance,
                 environmentalImpact = rec.EnvironmentalImpact
             }, page, size);
-            return Helper.paginate(result, page, size, paging?.total ?? 0, "Leaderboard fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Leaderboard fetched successfully");
         }
 
         [HttpGet("my-rank")]

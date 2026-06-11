@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace EcoPoinAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ecopoin-api-v1/[controller]")]
     [ApiController]
     public class WasteTypesController : ControllerBase
     {
@@ -39,7 +39,7 @@ namespace EcoPoinAPI.Controllers
                 isActive = rec.IsActive
             }, page, size);
             if (error != "") return Helper.err(error);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "WasteTypes fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "WasteTypes fetched successfully");
         }
 
         [HttpPost]
@@ -121,7 +121,7 @@ namespace EcoPoinAPI.Controllers
                 totalWeight = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.ActualWeight ?? d.EstimatedWeight),
                 totalPoints = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.DepositPoint?.Amount ?? 0m)
             }, page, size);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "WasteType reports fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "WasteType reports fetched successfully");
         }
     }
 

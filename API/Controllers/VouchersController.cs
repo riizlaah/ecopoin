@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace EcoPoinAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ecopoin-api-v1/[controller]")]
     [ApiController]
     public class VouchersController : ControllerBase
     {
@@ -37,7 +37,7 @@ namespace EcoPoinAPI.Controllers
                 isActive = rec.IsActive
             }, page, size);
             if (error != "") return Helper.err(error);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "Vouchers fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Vouchers fetched successfully");
         }
 
         [HttpPost]
@@ -117,7 +117,7 @@ namespace EcoPoinAPI.Controllers
                 totalPointsRedeemed = rec.RedemptionPoints.Sum(rp => rp.Amount),
                 isActive = rec.IsActive
             }, page, size);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "Voucher reports fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Voucher reports fetched successfully");
         }
 
         [HttpGet("history")]
@@ -143,7 +143,7 @@ namespace EcoPoinAPI.Controllers
                 createdAt = rec.CreatedAt,
                 updatedAt = rec.UpdatedAt
             }, page, size);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "Voucher usage history fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Voucher usage history fetched successfully");
         }
 
         [HttpGet("{code}/detail")]

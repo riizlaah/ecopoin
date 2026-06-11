@@ -31,7 +31,7 @@ namespace EcoPoinAPI
             };
         }
 
-        public static ObjectResult paginate(object? data, int page, int size, int totalPage, string message = "Success", int code = 200)
+        public static ObjectResult paginate(object? data, int page, int items, int totalPage, string message = "Success", int code = 200)
         {
             return new ObjectResult(new
             {
@@ -40,8 +40,8 @@ namespace EcoPoinAPI
                 pagination = new
                 {
                     page,
-                    size,
-                    totalPage
+                    totalPage,
+                    items,
                 }
             })
             {
@@ -74,23 +74,25 @@ namespace EcoPoinAPI
             return StringComparer.OrdinalIgnoreCase.Compare(str2, hashedStr) == 0;
         }
 
-        public static (string error, List<TRes>? results, (int current, int total)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, TRes> selector, int page, int size)
+        public static (string error, List<TRes>? results, (int current, int items, int totalPage)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, TRes> selector, int page, int size)
         {
             if (size < 1) return ("Size not valid", null, null);
             if (page < 1) return ("Page not valid", null, null);
-            var totalPage = (int)Math.Ceiling((decimal)query.Count() / size);
+            var items = query.Count();
+            var totalPage = (int)Math.Ceiling((decimal)items / size);
             var datas = query.Select(selector).AsQueryable().Skip((page - 1) * size).Take(size).ToList();
-            return ("", datas, (page, totalPage));
+            return ("", datas, (page, items, totalPage));
         }
 
-        public static (string error, List<TRes>? results, (int current, int total)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, int, TRes> selector, int page, int size)
+        public static (string error, List<TRes>? results, (int current, int items, int totalPage)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, int, TRes> selector, int page, int size)
         {
             if (size < 1) return ("Size not valid", null, null);
             if (page < 1) return ("Page not valid", null, null);
-            var totalPage = (int)Math.Ceiling((decimal)query.Count() / size);
+            var items = query.Count();
+            var totalPage = (int)Math.Ceiling((decimal)items / size);
             query = query.Skip((page - 1) * size).Take(size);
             var datas = query.Select(selector).ToList();
-            return ("", datas, (page, totalPage));
+            return ("", datas, (page, items, totalPage));
         }
 
         public async static Task<string> UploadFile(IFormFile file, string dir, string? filename = null)

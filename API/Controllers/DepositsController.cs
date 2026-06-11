@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace EcoPoinAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("ecopoin-api-v1/[controller]")]
     [ApiController]
     public class DepositsController : ControllerBase
     {
@@ -62,7 +62,7 @@ namespace EcoPoinAPI.Controllers
                 updatedAt = rec.UpdatedAt
             }, page, size);
             if (error != "") return Helper.err(error);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "Deposits fetched successfully");
+            return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Deposits fetched successfully");
         }
 
         [HttpGet("{id}")]
