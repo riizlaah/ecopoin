@@ -129,14 +129,14 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet]
         [Authorize(Roles = "admin")]
-        public ActionResult GetAll(int page = 1, int size = 1, string search = "")
+        public ActionResult GetAll(int page = 1, int size = 20, string search = "")
         {
             var query = dbc.Users.AsQueryable();
             if(search.Trim() != "")
             {
                 query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%") || EF.Functions.Like(u.FullName, $"%{search}%") || EF.Functions.Like(u.Email, $"%{search}%") || EF.Functions.Like(u.Phone, $"%{search}%"));
             }
-            var (isSuccess, result, paging, error) = Helper.Paginate(query, u => new
+            var (error, result, paging) = Helper.Paginate(query, u => new
             {
                 id = u.Id,
                 username = u.Username,
@@ -145,7 +145,7 @@ namespace EcoPoinAPI.Controllers
                 phone = u.Phone,
                 role = u.Role
             }, page, size);
-            if (!isSuccess) return Helper.err(error);
+            if (error != "") return Helper.err(error);
             return Helper.paginate(result, page, size, paging?.total ?? 1, "Users fetched successfully");
         }
 

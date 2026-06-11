@@ -74,14 +74,14 @@ namespace EcoPoinAPI
             return StringComparer.OrdinalIgnoreCase.Compare(str2, hashedStr) == 0;
         }
 
-        public static (bool isSuccess, List<TRes>? results, (int current, int total)? paging, string error) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, TRes> selector, int page, int size)
+        public static (string error, List<TRes>? results, (int current, int total)? paging) Paginate<TRes, TModel>(IQueryable<TModel> query, Func<TModel, TRes> selector, int page, int size)
         {
-            if (size < 1) return (false, null, null, "Size not valid");
-            if (page < 1) return (false, null, null, "Size not valid");
+            if (size < 1) return ("Size not valid", null, null);
+            if (page < 1) return ("Page not valid", null, null);
             var totalPage = (int)Math.Ceiling((decimal)query.Count() / size);
             query = query.Skip((page - 1) * size).Take(size);
             var datas = query.Select(selector).ToList();
-            return (true, datas, (page, totalPage), "");
+            return ("", datas, (page, totalPage));
         }
     }
 }

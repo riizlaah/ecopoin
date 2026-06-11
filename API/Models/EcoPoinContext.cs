@@ -101,8 +101,8 @@ public partial class EcoPoinContext : DbContext
                 .HasColumnName("pointTariff");
             entity.Property(e => e.ResidentId).HasColumnName("residentId");
 
-            entity.HasOne(d => d.Deposit).WithMany(p => p.DepositPoints)
-                .HasForeignKey(d => d.DepositId)
+            entity.HasOne(d => d.Deposit).WithOne(p => p.DepositPoint)
+                .HasForeignKey<DepositPoint>(dp => dp.DepositId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DepositPoints_Deposits");
 

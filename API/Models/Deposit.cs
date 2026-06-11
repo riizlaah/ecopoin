@@ -29,7 +29,7 @@ public partial class Deposit
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual ICollection<DepositPoint> DepositPoints { get; set; } = new List<DepositPoint>();
+    public virtual DepositPoint? DepositPoint { get; set; } = null!;
 
     public virtual User? Officer { get; set; }
 
