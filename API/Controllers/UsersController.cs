@@ -52,7 +52,7 @@ namespace EcoPoinAPI.Controllers
             if(!hasLetter || !hasUpper || !hasLower || !hasDigit || !hasSymbol) {
                 return Helper.err("Password must contain uppercase and lowercase letter, digit and symbols");
             }
-            if(Regex.IsMatch(input.phone, @"\+?\d{9,}"))
+            if(!Regex.IsMatch(input.phone, @"\+?\d{9,}"))
             {
                 return Helper.err("Phone number not valid");
             }
@@ -129,7 +129,7 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet]
         [Authorize(Roles = "admin")]
-        public ActionResult GetAll(int page = 1, int size = 20, string search = "")
+        public ActionResult GetAll(int page = 1, int size = 10, string search = "")
         {
             var query = dbc.Users.AsQueryable();
             if(search.Trim() != "")

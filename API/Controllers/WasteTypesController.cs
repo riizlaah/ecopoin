@@ -46,8 +46,8 @@ namespace EcoPoinAPI.Controllers
         [Authorize(Roles = "admin")]
         public ActionResult Create(WasteTypeDTO input)
         {
-            if (input.pointTariff < 0m) return Helper.err("Point tariff must be greater than zero");
-            if (input.CO2factor < 0m) return Helper.err("CO2 Factor must be greater than zero");
+            if (input.pointTariff <= 0m) return Helper.err("Point tariff must be greater than zero");
+            if (input.CO2factor <= 0m) return Helper.err("CO2 Factor must be greater than zero");
             if (dbc.WasteTypes.Any(rec => rec.Code == input.code)) return Helper.err("Code has been taken");
             if (dbc.WasteTypes.Any(rec => rec.Name == input.name)) return Helper.err("Name has been taken");
             dbc.WasteTypes.Add(new WasteType
@@ -83,9 +83,9 @@ namespace EcoPoinAPI.Controllers
         [Authorize(Roles = "admin")]
         public ActionResult Update(int id, WasteTypeDTO input)
         {
-            if (input.pointTariff < 0m) return Helper.err("Point tariff must be greater than zero");
-            if (input.CO2factor < 0m) return Helper.err("CO2 Factor must be greater than zero");
-            var rec = dbc.WasteTypes.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
+            if (input.pointTariff <= 0m) return Helper.err("Point tariff must be greater than zero");
+            if (input.CO2factor <= 0m) return Helper.err("CO2 Factor must be greater than zero");
+            var rec = dbc.WasteTypes.FirstOrDefault(rec => rec.Id == id);
             if (rec == null) return Helper.err("WasteType not found", 404);
             if (dbc.WasteTypes.Any(rec2 => rec2.Code == input.code && rec2.Id != rec.Id)) return Helper.err("Code has been taken");
             if (dbc.WasteTypes.Any(rec2 => rec2.Name == input.name && rec2.Id != rec.Id)) return Helper.err("Name has been taken");

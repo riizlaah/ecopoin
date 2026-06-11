@@ -37,7 +37,7 @@ namespace EcoPoinAPI.Controllers
                 isActive = rec.IsActive
             }, page, size);
             if (error != "") return Helper.err(error);
-            return Helper.paginate(result, page, size, paging?.total ?? 1, "WasteTypes fetched successfully");
+            return Helper.paginate(result, page, size, paging?.total ?? 1, "Vouchers fetched successfully");
         }
 
         [HttpPost]
@@ -45,9 +45,9 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Create(VoucherDTO input)
         {
             if (!input.code.All(Char.IsLetterOrDigit)) return Helper.err("Voucher code can only contain letters/digits");
-            if (input.pointCost < 0m) return Helper.err("Point cost must be greater than zero");
-            if (dbc.WasteTypes.Any(rec => rec.Code == input.code)) return Helper.err("Code has been taken");
-            if (dbc.WasteTypes.Any(rec => rec.Name == input.name)) return Helper.err("Name has been taken");
+            if (input.pointCost <= 0m) return Helper.err("Point cost must be greater than zero");
+            if (dbc.Vouchers.Any(rec => rec.Code == input.code)) return Helper.err("Code has been taken");
+            if (dbc.Vouchers.Any(rec => rec.Name == input.name)) return Helper.err("Name has been taken");
             dbc.Vouchers.Add(new Voucher
             {
                 Name = input.name,
@@ -80,9 +80,9 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Update(int id, VoucherDTO input)
         {
             if (!input.code.All(Char.IsLetterOrDigit)) return Helper.err("Voucher code can only contain letters/digits");
-            if (input.pointCost < 0m) return Helper.err("Point cost must be greater than zero");
-            var rec = dbc.Vouchers.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("WasteType not found", 404);
+            if (input.pointCost <= 0m) return Helper.err("Point cost must be greater than zero");
+            var rec = dbc.Vouchers.FirstOrDefault(rec => rec.Id == id);
+            if (rec == null) return Helper.err("Voucher not found", 404);
             if (dbc.Vouchers.Any(rec2 => rec2.Code == input.code && rec2.Id != rec.Id)) return Helper.err("Code has been taken");
             if (dbc.Vouchers.Any(rec2 => rec2.Name == input.name && rec2.Id != rec.Id)) return Helper.err("Name has been taken");
             rec.Name = input.name;
@@ -209,6 +209,7 @@ namespace EcoPoinAPI.Controllers
             if (rec == null) return Helper.err("Voucher not found", 404);
             if (rec.IsUsed) return Helper.err("Voucher has been used");
             rec.IsUsed = true;
+            rec.UpdatedAt = DateTime.Now;
             dbc.SaveChanges();
             return Helper.msg("Voucher used");
         }

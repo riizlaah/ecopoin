@@ -49,7 +49,7 @@ namespace EcoPoinAPI
             };
         }
 
-        public static ObjectResult err(string message, int code = 429)
+        public static ObjectResult err(string message, int code = 422)
         {
             return json(null, message, code);
         }

@@ -37,14 +37,14 @@ public partial class EcoPoinContext : DbContext
         {
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ActualWeight)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("actualWeight");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.EstimatedWeight)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("estimatedWeight");
             entity.Property(e => e.Notes)
                 .HasMaxLength(300)
@@ -89,7 +89,7 @@ public partial class EcoPoinContext : DbContext
         {
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Amount)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("amount");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -97,7 +97,7 @@ public partial class EcoPoinContext : DbContext
                 .HasColumnName("createdAt");
             entity.Property(e => e.DepositId).HasColumnName("depositId");
             entity.Property(e => e.PointTariff)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("pointTariff");
             entity.Property(e => e.ResidentId).HasColumnName("residentId");
 
@@ -116,7 +116,7 @@ public partial class EcoPoinContext : DbContext
         {
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Amount)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("amount");
             entity.Property(e => e.Code)
                 .HasMaxLength(72)
@@ -128,7 +128,7 @@ public partial class EcoPoinContext : DbContext
                 .HasColumnName("createdAt");
             entity.Property(e => e.IsUsed).HasColumnName("isUsed");
             entity.Property(e => e.PointCost)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("pointCost");
             entity.Property(e => e.ResidentId).HasColumnName("residentId");
             entity.Property(e => e.UpdatedAt)
@@ -190,7 +190,7 @@ public partial class EcoPoinContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("name");
             entity.Property(e => e.PointCost)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("pointCost");
         });
 
@@ -200,7 +200,7 @@ public partial class EcoPoinContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Co2factor)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("CO2Factor");
             entity.Property(e => e.Code)
                 .HasMaxLength(64)
@@ -212,7 +212,7 @@ public partial class EcoPoinContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("name");
             entity.Property(e => e.PointTariff)
-                .HasColumnType("decimal(18, 0)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("pointTariff");
         });
 
