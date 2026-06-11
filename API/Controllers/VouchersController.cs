@@ -62,7 +62,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Get(int id)
         {
             var rec = dbc.Vouchers.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("Voucher not found");
+            if (rec == null) return Helper.err("Voucher not found", 404);
             return Helper.json(new
             {
                 id = rec.Id,
@@ -79,7 +79,7 @@ namespace EcoPoinAPI.Controllers
         {
             if (input.pointCost < 0m) return Helper.err("Point cost must be greater than zero");
             var rec = dbc.Vouchers.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("WasteType not found");
+            if (rec == null) return Helper.err("WasteType not found", 404);
             if (dbc.Vouchers.Any(rec2 => rec2.Code == input.code && rec2.Id != rec.Id)) return Helper.err("Code has been taken");
             if (dbc.Vouchers.Any(rec2 => rec2.Name == input.name && rec2.Id != rec.Id)) return Helper.err("Name has been taken");
             rec.Name = input.name;
@@ -95,7 +95,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Delete(int id)
         {
             var rec = dbc.Vouchers.FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("Voucher not found");
+            if (rec == null) return Helper.err("Voucher not found", 404);
             dbc.Vouchers.Remove(rec);
             dbc.SaveChanges();
             return Helper.msg("Voucher removed successfully");
@@ -114,10 +114,7 @@ namespace EcoPoinAPI.Controllers
                 totalPointsRedeemed = rec.RedemptionPoints.Sum(rp => rp.Amount),
                 isActive = rec.IsActive
             }, page, size);
-            return Helper.paginate(new
-            {
-                data = result
-            }, page, size, paging?.total ?? 1, "Voucher reports fetched successfully");
+            return Helper.paginate(result, page, size, paging?.total ?? 1, "Voucher reports fetched successfully");
         }
 
     }

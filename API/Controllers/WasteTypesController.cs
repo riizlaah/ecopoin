@@ -67,7 +67,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Get(int id)
         {
             var rec = dbc.WasteTypes.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("WasteType not found");
+            if (rec == null) return Helper.err("WasteType not found", 404);
             return Helper.json(new
             {
                 id = rec.Id,
@@ -86,7 +86,7 @@ namespace EcoPoinAPI.Controllers
             if (input.pointTariff < 0m) return Helper.err("Point tariff must be greater than zero");
             if (input.CO2factor < 0m) return Helper.err("CO2 Factor must be greater than zero");
             var rec = dbc.WasteTypes.AsNoTrackingWithIdentityResolution().FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("WasteType not found");
+            if (rec == null) return Helper.err("WasteType not found", 404);
             if (dbc.WasteTypes.Any(rec2 => rec2.Code == input.code && rec2.Id != rec.Id)) return Helper.err("Code has been taken");
             if (dbc.WasteTypes.Any(rec2 => rec2.Name == input.name && rec2.Id != rec.Id)) return Helper.err("Name has been taken");
             rec.Name = input.name;
@@ -103,7 +103,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Delete(int id)
         {
             var rec = dbc.WasteTypes.FirstOrDefault(rec => rec.Id == id);
-            if (rec == null) return Helper.err("Voucher not found");
+            if (rec == null) return Helper.err("Voucher not found", 404);
             dbc.WasteTypes.Remove(rec);
             dbc.SaveChanges();
             return Helper.msg("WasteType removed successfully");
@@ -121,10 +121,7 @@ namespace EcoPoinAPI.Controllers
                 totalWeight = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.ActualWeight ?? d.EstimatedWeight),
                 totalPoints = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.DepositPoint?.Amount ?? 0m)
             }, page, size);
-            return Helper.paginate(new
-            {
-                data = result
-            }, page, size, paging?.total ?? 1, "WasteType reports fetched successfully");
+            return Helper.paginate(result, page, size, paging?.total ?? 1, "WasteType reports fetched successfully");
         }
     }
 

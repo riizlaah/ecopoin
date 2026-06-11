@@ -536,7 +536,7 @@
         "estimatedWeight": 1.5,
         "actualWeight": null | 1.5,
         "estimatedPoints": 100,
-        "actualPoints": 100,
+        "actualPoints": null | 100,
         "status": "string",
       },
       {
@@ -556,7 +556,7 @@
         "estimatedWeight": 1.5,
         "actualWeight": null | 1.5,
         "estimatedPoints": 100,
-        "actualPoints": 100,
+        "actualPoints": null | 100,
         "status": "string",
       }
     ]
@@ -588,6 +588,11 @@
     "data": {
       "id": 1,
       "resident": {
+        "id": 0,
+        "fullName": "string",
+        "email": "string",
+      },
+      "officer": {
         "id": 0,
         "fullName": "string",
         "email": "string",

@@ -83,5 +83,16 @@ namespace EcoPoinAPI
             var datas = query.Select(selector).ToList();
             return ("", datas, (page, totalPage));
         }
+
+        public async static Task<string> UploadFile(IFormFile file, string dir, string? filename = null)
+        {
+            var uniqName = filename ?? $"{Guid.NewGuid()}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(file.FileName)}";
+            var path = Path.Combine(dir, uniqName);
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            return uniqName;
+        }
     }
 }

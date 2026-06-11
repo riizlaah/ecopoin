@@ -29,7 +29,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Login(LoginDTO input)
         {
             var user = dbc.Users.FirstOrDefault(u => u.Username == input.username);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             if (!Helper.VerifySha256(input.password, user.Password)) return Helper.err("Wrong username or password");
             return Helper.json(new
             {
@@ -78,7 +78,7 @@ namespace EcoPoinAPI.Controllers
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             return Helper.json(new
             {
                 id = userId,
@@ -98,7 +98,7 @@ namespace EcoPoinAPI.Controllers
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             return Helper.json(new
             {
                 username = user.Username,
@@ -188,7 +188,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Get(int id)
         {
             var user = dbc.Users.AsNoTrackingWithIdentityResolution().FirstOrDefault(u => u.Id == id);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             return Helper.json(new
             {
                 id = user.Id,
@@ -227,7 +227,7 @@ namespace EcoPoinAPI.Controllers
             var roles = new[] { "resident", "officer", "admin" };
             if (!roles.Contains(input.role)) return Helper.err("Role invalid");
             var user = dbc.Users.FirstOrDefault(u => u.Id == id);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             if (dbc.Users.Any(u => u.Username == input.username && u.Id != userId)) return Helper.err("Username has been taken");
             if (dbc.Users.Any(u => u.Email == input.email && u.Id != userId)) return Helper.err("Email has been taken");
             if (dbc.Users.Any(u => u.Phone == input.phone && u.Id != userId)) return Helper.err("Phone has been taken");
@@ -246,7 +246,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Delete(int id)
         {
             var user = dbc.Users.FirstOrDefault(u => u.Id == id);
-            if (user == null) return Helper.err("User not found");
+            if (user == null) return Helper.err("User not found", 404);
             dbc.Users.Remove(user);
             dbc.SaveChanges();
             return Helper.msg("User removed successfully");

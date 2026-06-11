@@ -2,6 +2,7 @@ using EcoPoinAPI;
 using EcoPoinAPI.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -54,8 +55,27 @@ builder.Services.Configure<ApiBehaviorOptions>(opt =>
         return new BadRequestObjectResult(new { message = combinedMsg });
     };
 });
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
+
+var uploadPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot\\uploads");
+
+if(!Directory.Exists(uploadPath)) { Directory.CreateDirectory(uploadPath); }
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadPath),
+    RequestPath = "/uploads"
+});
+
+app.UseCors("AllowAll");
 
 app.UseSwagger();
 app.UseSwaggerUI();
