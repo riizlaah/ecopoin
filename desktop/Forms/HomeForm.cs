@@ -70,7 +70,10 @@ namespace EcoPoinDesktop.Forms
 
         private void OnViewReports(object sender, EventArgs e)
         {
-
+            var window = new ViewReportsForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
 
         private void OnManageWasteTypes(object sender, EventArgs e)

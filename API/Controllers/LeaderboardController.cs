@@ -22,7 +22,7 @@ namespace EcoPoinAPI.Controllers
         [Authorize]
         public ActionResult GetAll(int page = 1, int size = 10)
         {
-            var query = dbc.Users.Where(u => u.Role == "resident").Include(d => d.DepositPoints).ThenInclude(d => d.Deposit).ThenInclude(d => d.WasteType).OrderByDescending(u => u.DepositPoints.Sum(d => d.Amount));
+            var query = dbc.Users.Where(u => u.Role == "resident").Include(d => d.RedemptionPoints).Include(d => d.DepositPoints).ThenInclude(d => d.Deposit).ThenInclude(d => d.WasteType).OrderByDescending(u => u.DepositPoints.Sum(d => d.Amount));
             var (error, result, paging) = Helper.Paginate(query, (rec, idx) => new
             {
                 rank = idx + 1,
@@ -39,12 +39,13 @@ namespace EcoPoinAPI.Controllers
         public ActionResult MyRank()
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var data = dbc.Users.Where(u => u.Role == "resident").Include(d => d.DepositPoints).ThenInclude(d => d.Deposit)
+            var data = dbc.Users.Where(u => u.Role == "resident").Include(d => d.RedemptionPoints).Include(d => d.DepositPoints).ThenInclude(d => d.Deposit)
                 .ThenInclude(d => d.WasteType).OrderByDescending(u => u.DepositPoints.Sum(d => d.Amount)).AsEnumerable().Select((rec, idx) => new
                 {
                     rank = idx + 1,
                     id = rec.Id,
                     fullName = rec.FullName,
+                    currentBalance = rec.Balance,
                     totalPoints = rec.TotalPoints,
                     environmentalImpact = rec.EnvironmentalImpact
                 }).FirstOrDefault(u => u.id == userId);

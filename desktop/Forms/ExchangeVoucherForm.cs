@@ -48,7 +48,7 @@ namespace EcoPoinDesktop.Forms
             currentVoucher = res;
             voucherName.Text = $"Name : {res.voucher.name}";
             pointCost.Text = $"Point Cost : {res.voucher.pointCost}";
-            residentName.Text = $"Resident Name : {res.resident.fullName}";
+            residentName.Text = $"Resident Name : {res.resident.name}";
             isUsed.Text = $"Is Used : " + (res.isUsed ? "Yes" : "No");
             if (res.isUsed)
             {
@@ -88,6 +88,7 @@ namespace EcoPoinDesktop.Forms
                 currentVoucher = null;
                 useBtn.Text = "Check";
                 voucherData.Hide();
+                useBtn.Enabled = true;
             }
         }
     }
@@ -97,7 +98,7 @@ namespace EcoPoinDesktop.Forms
     {
         public int id { get; set; }
         public BaseVoucherRes voucher { get; set; }
-        public ResidentRes2 resident { get; set; }
+        public ResidentRes resident { get; set; }
         public string code { get; set; }
         public int amount { get; set; }
         public bool isUsed { get; set; }
@@ -114,11 +115,5 @@ namespace EcoPoinDesktop.Forms
         public bool isActive { get; set; }
     }
 
-    public class ResidentRes2
-    {
-        public int id { get; set; }
-        public string fullName { get; set; }
-        public string email { get; set; }
-    }
 
 }

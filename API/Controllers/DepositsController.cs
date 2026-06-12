@@ -71,7 +71,7 @@ namespace EcoPoinAPI.Controllers
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var role = User.FindFirstValue(ClaimTypes.Role) ?? "resident";
-            var rec = dbc.Deposits.Include(d => d.Resident).Include(d => d.WasteType).AsNoTrackingWithIdentityResolution().FirstOrDefault(u => u.Id == id);
+            var rec = dbc.Deposits.Include(d => d.Resident).Include(d => d.Officer).Include(d => d.DepositPoint).Include(d => d.WasteType).AsNoTrackingWithIdentityResolution().FirstOrDefault(u => u.Id == id);
             if (rec == null) return Helper.err("Deposit not found", 404);
             if (role == "resident" && userId != rec.ResidentId) return Helper.err("Forbidden", 403);
             return Helper.json(new
@@ -178,6 +178,7 @@ namespace EcoPoinAPI.Controllers
             rec.WasteTypeId = wasteTypeId;
             rec.ActualWeight = actualWeight;
             rec.UpdatedAt = DateTime.Now;
+            rec.OfficerId = userId;
             if(photo != null)
             {
                 rec.PhotoPath = await Helper.UploadFile(photo, uploadDir, rec.PhotoPath);

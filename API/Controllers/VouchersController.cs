@@ -109,8 +109,9 @@ namespace EcoPoinAPI.Controllers
         public ActionResult GetTops(int page = 1, int size = 20)
         {
             var query = dbc.Vouchers.Include(rec => rec.RedemptionPoints).OrderByDescending(rec => rec.RedemptionPoints.Sum(rp => rp.Amount)).AsQueryable();
-            var (error, result, paging) = Helper.Paginate(query, rec => new
+            var (error, result, paging) = Helper.Paginate(query, (rec, idx) => new
             {
+                rank = idx + 1,
                 id = rec.Id,
                 name = rec.Name,
                 totalRedemption = rec.RedemptionPoints.Count(),
@@ -187,13 +188,15 @@ namespace EcoPoinAPI.Controllers
             var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
             if (user == null) return Helper.err("User not found", 404);
             if (user.Balance < voucher.PointCost) return Helper.err($"Insufficient points. Required: {voucher.PointCost}, available: {user.Balance}");
+            var code = voucher.Code + Helper.RandStr(12);
+            while(dbc.RedemptionPoints.Any(rp => rp.Code == code)) code = voucher.Code + Helper.RandStr(12);
             dbc.RedemptionPoints.Add(new RedemptionPoint
             {
                 ResidentId = userId,
                 Amount = voucher.PointCost,
                 PointCost = voucher.PointCost,
                 IsUsed = false,
-                Code = voucher.Code + DateTime.Now.ToString("yyyyMMdd") + Helper.RandStr(),
+                Code = code,
                 VoucherId = voucher.Id,
             });
             dbc.SaveChanges();

@@ -113,13 +113,15 @@ namespace EcoPoinAPI.Controllers
         [Authorize(Roles = "admin")]
         public ActionResult GetTops(int page = 1, int size = 20)
         {
-            var query = dbc.WasteTypes.Include(rec => rec.Deposits).OrderByDescending(rec => rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.ActualWeight ?? d.EstimatedWeight)).AsQueryable();
-            var (error, result, paging) = Helper.Paginate(query, rec => new
+            var query = dbc.WasteTypes.Include(rec => rec.Deposits).ThenInclude(d => d.DepositPoint).OrderByDescending(rec => rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.ActualWeight ?? d.EstimatedWeight)).AsQueryable();
+            var (error, result, paging) = Helper.Paginate(query, (rec, idx) => new
             {
+                rank = idx + 1,
                 id = rec.Id,
                 name = rec.Name,
                 totalWeight = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.ActualWeight ?? d.EstimatedWeight),
-                totalPoints = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.DepositPoint?.Amount ?? 0m)
+                totalPoints = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => d.DepositPoint?.Amount ?? 0m),
+                totalEnvironmentalImpact = rec.Deposits.Where(d => d.Status == "Verified").Sum(d => (d.ActualWeight ?? 0m) * rec.Co2factor)
             }, page, size);
             return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "WasteType reports fetched successfully");
         }

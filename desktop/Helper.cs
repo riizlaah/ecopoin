@@ -129,6 +129,7 @@ namespace EcoPoinDesktop
 
         public static void GenerateColumns(DataGridView table, string[] headers, string[] bindings)
         {
+            table.RowHeadersVisible = false;
             table.AutoGenerateColumns = false;
             for (var i = 0; i < headers.Length; i++)
             {
@@ -141,7 +142,6 @@ namespace EcoPoinDesktop
                 };
                 table.Columns.Add(col);
             }
-            table.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
         }
 
         async public static Task<Bitmap?> FetchImg(string url)
