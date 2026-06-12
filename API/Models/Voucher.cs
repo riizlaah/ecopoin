@@ -11,7 +11,7 @@ public partial class Voucher
 
     public string Code { get; set; } = null!;
 
-    public decimal PointCost { get; set; }
+    public int PointCost { get; set; }
 
     public bool IsActive { get; set; }
 

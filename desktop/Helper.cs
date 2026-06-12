@@ -13,31 +13,57 @@ namespace EcoPoinDesktop
     {
         private const string addr = "http://localhost:5000/";
         public static readonly HttpClient _httpClient = new HttpClient();
-
-        public static LoginRes? session { get; set; }
+        public static ProfileRes? session { get; set; }
+        public static string loginToken { get; set; } = "";
 
 
         async public static Task<(bool isSuccess, string message, TRes? res)> JsonReq<TRes, TReq>(string route, string method = "get", TReq? req = default) where TRes : class where TReq : class
         {
-            HttpResponseMessage res;
+            HttpResponseMessage? res = null;
             var url = $"{addr}ecopoin-api-v1/{route}";
             method = method.ToLower();
-            if (session != null) _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", session.token);
+            if (session != null) _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginToken);
+            try
+            {
+                switch (method)
+                {
+                    case "post":
+                        res = await _httpClient.PostAsJsonAsync(url, req);
+                        break;
+                    case "put":
+                        res = await _httpClient.PutAsJsonAsync(url, req);
+                        break;
+                    case "patch":
+                        res = await _httpClient.PatchAsJsonAsync(url, req);
+                        break;
+                    default:
+                        return (false, "Unsupported request method", null);
+                }
+                var res2 = await res.Content.ReadFromJsonAsync<ApiRes<TRes>>();
+                if (res2 == null) return (false, "Network error", null);
+                return (res.IsSuccessStatusCode, res2.message, res2.data);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Code : {res?.StatusCode}");
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.StackTrace);
+                return (false, ex.Message, null);
+            }
+        }
+
+        async public static Task<(bool isSuccess, string message, TRes? res)> JsonReq<TRes>(string route, string method = "get") where TRes : class
+        {
+            HttpResponseMessage? res = null;
+            var url = $"{addr}ecopoin-api-v1/{route}";
+            method = method.ToLower();
+            if (loginToken != "") _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginToken);
             try
             {
                 switch (method)
                 {
                     case "get":
                         res = await _httpClient.GetAsync(url);
-                        break;
-                    case "post":
-                        res = await _httpClient.PostAsJsonAsync(url, req);
-                        break;
-                    case "put":
-                        res = await _httpClient.PatchAsJsonAsync(url, req);
-                        break;
-                    case "patch":
-                        res = await _httpClient.PatchAsJsonAsync(url, req);
                         break;
                     case "delete":
                         res = await _httpClient.DeleteAsync(url);
@@ -51,6 +77,7 @@ namespace EcoPoinDesktop
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"Code : {res?.StatusCode}");
                 Debug.WriteLine(ex.Message);
                 Debug.WriteLine(ex.StackTrace);
                 return (false, ex.Message, null);
@@ -61,7 +88,7 @@ namespace EcoPoinDesktop
             HttpResponseMessage res;
             var url = $"{addr}ecopoin-api-v1/{route}";
             var method = "get";
-            if (session != null) _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", session.token);
+            if (session != null) _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginToken);
             try
             {
                 res = await _httpClient.GetAsync(url);
@@ -77,7 +104,18 @@ namespace EcoPoinDesktop
             }
         }
 
-
+        async public static Task<bool> Profile()
+        {
+            var (isSuccess, msg, res) = await JsonReq<ProfileRes>("users/me");
+            if (isSuccess && res != null)
+            {
+                session = res;
+            } else
+            {
+                Debug.WriteLine(msg);
+            }
+            return isSuccess && res != null;
+        }
 
         public static void LockWindow(Form window)
         {
@@ -86,6 +124,23 @@ namespace EcoPoinDesktop
             window.MaximizeBox = false;
             window.MinimizeBox = false;
             window.StartPosition = FormStartPosition.CenterScreen;
+        }
+
+        public static void GenerateColumns(DataGridView table, string[] headers, string[] bindings)
+        {
+            table.AutoGenerateColumns = false;
+            for (var i = 0; i < headers.Length; i++)
+            {
+                var col = new DataGridViewTextBoxColumn
+                {
+                    HeaderText = headers[i],
+                    Name = headers[i],
+                    ReadOnly = true,
+                    DataPropertyName = bindings[i]
+                };
+                table.Columns.Add(col);
+            }
+            table.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
         }
     }
 
@@ -111,14 +166,7 @@ namespace EcoPoinDesktop
 
 
 
-    public class LoginRes
-    {
-        public int id { get; set; }
-        public string fullName { get; set; }
-        public string username { get; set; }
-        public string role { get; set; }
-        public string token { get; set; }
-    }
+    
 
 
 }

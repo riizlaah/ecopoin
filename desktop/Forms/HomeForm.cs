@@ -38,6 +38,12 @@ namespace EcoPoinDesktop.Forms
         protected override void OnClosed(EventArgs e)
         {
             Helper.session = null;
+            Helper.loginToken = "";
+            if(logout)
+            {
+                Properties.Settings.Default.LoginToken = "";
+                Properties.Settings.Default.Save();
+            }
             if (!logout) Application.Exit();
         }
 
@@ -48,7 +54,10 @@ namespace EcoPoinDesktop.Forms
 
         private void OnManageUsers(object sender, EventArgs e)
         {
-
+            var window = new ManageUsersForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
 
         private void OnExchangeVoucher(object sender, EventArgs e)
@@ -63,18 +72,29 @@ namespace EcoPoinDesktop.Forms
 
         private void OnManageWasteTypes(object sender, EventArgs e)
         {
-
+            var window = new ManageWasteTypesForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
 
         private void OnManageVouchers(object sender, EventArgs e)
         {
-
+            var window = new ManageVouchersForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
 
         private void OnLogOut(object sender, EventArgs e)
         {
             logout = true;
             Close();
+        }
+
+        private void OnViewDeposits(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -11,7 +11,7 @@ public partial class WasteType
 
     public string Code { get; set; } = null!;
 
-    public decimal PointTariff { get; set; }
+    public int PointTariff { get; set; }
 
     public decimal Co2factor { get; set; }
 

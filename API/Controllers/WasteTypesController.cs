@@ -129,7 +129,7 @@ namespace EcoPoinAPI.Controllers
     {
         [Required] public string name { get; set; } = null!;
         [Required] public string code { get; set; } = null!;
-        [Required] public decimal pointTariff { get; set; }
+        [Required] public int pointTariff { get; set; }
         [Required] public decimal CO2factor { get; set; }
         [Required] public bool isActive { get; set; }
     }

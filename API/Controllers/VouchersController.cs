@@ -222,7 +222,7 @@ namespace EcoPoinAPI.Controllers
     {
         [Required] public string name { get; set; } = null!;
         [Required] public string code { get; set; } = null!;
-        [Required] public decimal pointCost { get; set; }
+        [Required] public int pointCost { get; set; }
         [Required] public bool isActive { get; set; }
     }
 }

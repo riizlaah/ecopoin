@@ -130,19 +130,25 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet]
         [Authorize(Roles = "admin")]
-        public ActionResult GetAll(int page = 1, int size = 10, string search = "")
+        public ActionResult GetAll(int page = 1, int size = 10, string role = "", string search = "")
         {
             var query = dbc.Users.AsQueryable();
             if(search.Trim() != "")
             {
                 query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%") || EF.Functions.Like(u.FullName, $"%{search}%") || EF.Functions.Like(u.Email, $"%{search}%") || EF.Functions.Like(u.Phone, $"%{search}%"));
             }
+            var allowed = new[] { "resident", "officer", "admin" };
+            if(role != "")
+            {
+                if (!allowed.Contains(role)) return Helper.err("Role not valid");
+                query = query.Where(u => u.Role == role);
+            }
             var (error, result, paging) = Helper.Paginate(query, u => new
             {
                 id = u.Id,
                 username = u.Username,
                 fullName = u.FullName,
-                email = u.FullName,
+                email = u.Email,
                 phone = u.Phone,
                 role = u.Role
             }, page, size);
@@ -164,10 +170,11 @@ namespace EcoPoinAPI.Controllers
             {
                 return Helper.err("Password must contain uppercase and lowercase letter, digit and symbols");
             }
-            if (Regex.IsMatch(input.phone, @"\+?\d{9,}"))
+            if (!Regex.IsMatch(input.phone, @"\+?\d{9,}"))
             {
                 return Helper.err("Phone number not valid");
             }
+            if (input.username.Contains(" ")) return Helper.err("Username can't contain spaces");
             if (dbc.Users.Any(u => u.Username == input.username)) return Helper.err("Username has been taken");
             if (dbc.Users.Any(u => u.Email == input.email)) return Helper.err("Email has been taken");
             if (dbc.Users.Any(u => u.Phone == input.phone)) return Helper.err("Phone has been taken");
@@ -195,7 +202,7 @@ namespace EcoPoinAPI.Controllers
                 id = user.Id,
                 username = user.Username,
                 fullName = user.FullName,
-                email = user.FullName,
+                email = user.Email,
                 phone = user.Phone,
                 role = user.Role
             }, "User fetched successfully");
@@ -221,7 +228,8 @@ namespace EcoPoinAPI.Controllers
                     return Helper.err("Password must contain uppercase and lowercase letter, digit and symbols");
                 }
             }
-            if (Regex.IsMatch(input.phone, @"\+?\d{9,}"))
+            if (input.username.Contains(" ")) return Helper.err("Username can't contain spaces");
+            if (!Regex.IsMatch(input.phone, @"\+?\d{9,}"))
             {
                 return Helper.err("Phone number not valid");
             }
@@ -229,9 +237,9 @@ namespace EcoPoinAPI.Controllers
             if (!roles.Contains(input.role)) return Helper.err("Role invalid");
             var user = dbc.Users.FirstOrDefault(u => u.Id == id);
             if (user == null) return Helper.err("User not found", 404);
-            if (dbc.Users.Any(u => u.Username == input.username && u.Id != userId)) return Helper.err("Username has been taken");
-            if (dbc.Users.Any(u => u.Email == input.email && u.Id != userId)) return Helper.err("Email has been taken");
-            if (dbc.Users.Any(u => u.Phone == input.phone && u.Id != userId)) return Helper.err("Phone has been taken");
+            if (dbc.Users.Any(u => u.Username == input.username && u.Id != id)) return Helper.err("Username has been taken");
+            if (dbc.Users.Any(u => u.Email == input.email && u.Id != id)) return Helper.err("Email has been taken");
+            if (dbc.Users.Any(u => u.Phone == input.phone && u.Id != id)) return Helper.err("Phone has been taken");
             user.Username = input.username; 
             user.Email = input.email; 
             user.Phone = input.phone;

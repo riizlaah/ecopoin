@@ -36,11 +36,12 @@
             button5 = new Button();
             button6 = new Button();
             datetimeLb = new Label();
+            button7 = new Button();
             SuspendLayout();
             // 
             // button1
             // 
-            button1.Location = new Point(59, 88);
+            button1.Location = new Point(56, 52);
             button1.Name = "button1";
             button1.Size = new Size(193, 59);
             button1.TabIndex = 0;
@@ -59,7 +60,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(289, 168);
+            button2.Location = new Point(286, 132);
             button2.Name = "button2";
             button2.Size = new Size(193, 59);
             button2.TabIndex = 2;
@@ -69,7 +70,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(289, 88);
+            button3.Location = new Point(286, 52);
             button3.Name = "button3";
             button3.Size = new Size(193, 59);
             button3.TabIndex = 3;
@@ -79,7 +80,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(59, 243);
+            button4.Location = new Point(56, 207);
             button4.Name = "button4";
             button4.Size = new Size(193, 59);
             button4.TabIndex = 4;
@@ -89,7 +90,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(289, 243);
+            button5.Location = new Point(171, 281);
             button5.Name = "button5";
             button5.Size = new Size(193, 59);
             button5.TabIndex = 5;
@@ -99,7 +100,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(59, 168);
+            button6.Location = new Point(56, 132);
             button6.Name = "button6";
             button6.Size = new Size(193, 59);
             button6.TabIndex = 6;
@@ -117,11 +118,22 @@
             datetimeLb.Text = "dddd, dd MMMM yyyy (HH:mm:ss)";
             datetimeLb.TextAlign = ContentAlignment.MiddleRight;
             // 
+            // button7
+            // 
+            button7.Location = new Point(286, 207);
+            button7.Name = "button7";
+            button7.Size = new Size(193, 59);
+            button7.TabIndex = 8;
+            button7.Text = "View Deposits";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += OnViewDeposits;
+            // 
             // HomeForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(552, 390);
+            Controls.Add(button7);
             Controls.Add(datetimeLb);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -147,5 +159,6 @@
         private Button button5;
         private Button button6;
         private Label datetimeLb;
+        private Button button7;
     }
 }

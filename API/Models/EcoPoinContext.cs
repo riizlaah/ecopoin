@@ -190,7 +190,7 @@ public partial class EcoPoinContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("name");
             entity.Property(e => e.PointCost)
-                .HasColumnType("decimal(18, 2)")
+                .HasColumnType("int")
                 .HasColumnName("pointCost");
         });
 
@@ -212,7 +212,7 @@ public partial class EcoPoinContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("name");
             entity.Property(e => e.PointTariff)
-                .HasColumnType("decimal(18, 2)")
+                .HasColumnType("int")
                 .HasColumnName("pointTariff");
         });
 
