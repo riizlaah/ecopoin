@@ -9,10 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="UserControls\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="Forms\ManageWasteTypesForm.cs">
       <SubType>Form</SubType>
     </Compile>

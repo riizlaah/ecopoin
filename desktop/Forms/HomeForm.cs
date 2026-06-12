@@ -62,7 +62,10 @@ namespace EcoPoinDesktop.Forms
 
         private void OnExchangeVoucher(object sender, EventArgs e)
         {
-
+            var window = new ExchangeVoucherForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
 
         private void OnViewReports(object sender, EventArgs e)
@@ -94,7 +97,10 @@ namespace EcoPoinDesktop.Forms
 
         private void OnViewDeposits(object sender, EventArgs e)
         {
-
+            var window = new ViewDepositsForm();
+            Hide();
+            window.Show();
+            window.FormClosed += (s, e) => { Show(); };
         }
     }
 }

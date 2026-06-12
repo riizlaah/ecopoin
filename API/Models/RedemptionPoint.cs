@@ -13,9 +13,9 @@ public partial class RedemptionPoint
 
     public string Code { get; set; } = null!;
 
-    public decimal Amount { get; set; }
+    public int Amount { get; set; }
 
-    public decimal PointCost { get; set; }
+    public int PointCost { get; set; }
 
     public bool IsUsed { get; set; }
 

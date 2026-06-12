@@ -17,7 +17,7 @@ namespace EcoPoinAPI.Controllers
 
         public DepositsController(EcoPoinContext dbc, IWebHostEnvironment env)
         {
-            uploadDir = env.ContentRootPath;
+            uploadDir = Path.Combine(env.ContentRootPath, "wwwroot\\uploads");
             this.dbc = dbc;
         }
 
@@ -55,9 +55,9 @@ namespace EcoPoinAPI.Controllers
                     isActive = rec.WasteType.IsActive
                 },
                 estimatedWeight = rec.EstimatedWeight,
-                estimatedPoints = rec.EstimatedWeight * rec.WasteType.PointTariff,
+                estimatedPoints = (int)Math.Round(rec.EstimatedWeight * rec.WasteType.PointTariff),
                 actualWeight = rec.ActualWeight,
-                actualPoints = rec.ActualWeight == null ? null : rec.ActualWeight * rec.WasteType.PointTariff,
+                actualPoints = rec.DepositPoint?.Amount,
                 status = rec.Status,
                 updatedAt = rec.UpdatedAt
             }, page, size);
@@ -71,7 +71,7 @@ namespace EcoPoinAPI.Controllers
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var role = User.FindFirstValue(ClaimTypes.Role) ?? "resident";
-            var rec = dbc.Deposits.AsNoTrackingWithIdentityResolution().FirstOrDefault(u => u.Id == id);
+            var rec = dbc.Deposits.Include(d => d.Resident).Include(d => d.WasteType).AsNoTrackingWithIdentityResolution().FirstOrDefault(u => u.Id == id);
             if (rec == null) return Helper.err("Deposit not found", 404);
             if (role == "resident" && userId != rec.ResidentId) return Helper.err("Forbidden", 403);
             return Helper.json(new
@@ -83,6 +83,12 @@ namespace EcoPoinAPI.Controllers
                     name = rec.Resident.FullName,
                     email = rec.Resident.Email
                 },
+                officer = rec.OfficerId == null ? null : new
+                {
+                    id = rec.OfficerId,
+                    name = rec.Officer.FullName,
+                    email = rec.Officer.Email
+                },
                 wasteType = new
                 {
                     id = rec.WasteTypeId,
@@ -92,9 +98,9 @@ namespace EcoPoinAPI.Controllers
                     isActive = rec.WasteType.IsActive
                 },
                 estimatedWeight = rec.EstimatedWeight,
-                estimatedPoints = rec.EstimatedWeight * rec.WasteType.PointTariff,
+                estimatedPoints = (int)Math.Round(rec.EstimatedWeight * rec.WasteType.PointTariff),
                 actualWeight = rec.ActualWeight,
-                actualPoints = rec.ActualWeight == null ? null : rec.ActualWeight * rec.WasteType.PointTariff,
+                actualPoints = rec.DepositPoint?.Amount,
                 status = rec.Status,
                 notes = rec.Notes,
                 rejectionReason = rec.RejectionReason,
@@ -113,7 +119,7 @@ namespace EcoPoinAPI.Controllers
             var allowed = new[] { "image/png", "image/jpeg" };
             if (!allowed.Contains(photo.ContentType)) return Helper.err("Photo must be png/jpg file");
             if (estimatedWeight <= 0m) return Helper.err("Estimated weight not valid");
-            if (await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
+            if (!await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
             dbc.Deposits.Add(new Deposit
             {
                 ResidentId = userId,
@@ -136,7 +142,7 @@ namespace EcoPoinAPI.Controllers
             var allowed = new[] { "image/png", "image/jpeg" };
             if (!allowed.Contains(photo.ContentType)) return Helper.err("Photo must be png/jpg file");
             if (estimatedWeight <= 0m) return Helper.err("Estimated weight not valid");
-            if (await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
+            if (!await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
             var rec = await dbc.Deposits.FindAsync(id);
             if (rec == null) return Helper.err("Deposit not found", 404);
             if (rec.Status != "Pending") return Helper.err("Reviewed Deposit can't be updated");
@@ -151,7 +157,7 @@ namespace EcoPoinAPI.Controllers
 
         [HttpPut("{id}/verify")]
         [Authorize(Roles = "officer")]
-        public async Task<ActionResult> Verify(int id, [FromForm] int wasteTypeId, [FromForm] decimal actualWeight, [FromForm] bool verified, IFormFile photo, [FromForm] string? rejectionReason = null)
+        public async Task<ActionResult> Verify(int id, [FromForm] int wasteTypeId, [FromForm] decimal actualWeight, [FromForm] bool verified, IFormFile? photo = null, [FromForm] string? rejectionReason = null)
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             if (photo != null)
@@ -165,8 +171,8 @@ namespace EcoPoinAPI.Controllers
                 if (rejectionReason == null || rejectionReason.Trim() == "") return Helper.err("Rejection reason can't be empty");
             }
             if (actualWeight <= 0m) return Helper.err("Actual weight not valid");
-            if (await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
-            var rec = await dbc.Deposits.FindAsync(id);
+            if (!await dbc.WasteTypes.AnyAsync(w => w.Id == wasteTypeId)) return Helper.err("Waste Type not found", 404);
+            var rec = await dbc.Deposits.Include(d => d.WasteType).FirstOrDefaultAsync(d => d.Id == id);
             if (rec == null) return Helper.err("Deposit not found", 404);
             if (rec.Status != "Pending") return Helper.err("Reviewed Deposit can't be updated");
             rec.WasteTypeId = wasteTypeId;
@@ -180,10 +186,10 @@ namespace EcoPoinAPI.Controllers
             if(!verified) rec.RejectionReason = rejectionReason;
             else
             {
-                dbc.DepositPoints.Add(new DepositPoint
+                await dbc.DepositPoints.AddAsync(new DepositPoint
                 {
                     ResidentId = rec.ResidentId,
-                    Amount = actualWeight * rec.WasteType.PointTariff,
+                    Amount = (int)Math.Round(actualWeight * rec.WasteType.PointTariff),
                     PointTariff = rec.WasteType.PointTariff,
                     DepositId = rec.Id,
                 });

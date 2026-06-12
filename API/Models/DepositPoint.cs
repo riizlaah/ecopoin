@@ -11,9 +11,9 @@ public partial class DepositPoint
 
     public int DepositId { get; set; }
 
-    public decimal Amount { get; set; }
+    public int Amount { get; set; }
 
-    public decimal PointTariff { get; set; }
+    public int PointTariff { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

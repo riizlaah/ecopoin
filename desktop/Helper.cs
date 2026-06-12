@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 
 namespace EcoPoinDesktop
 {
@@ -141,6 +142,26 @@ namespace EcoPoinDesktop
                 table.Columns.Add(col);
             }
             table.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
+        }
+
+        async public static Task<Bitmap?> FetchImg(string url)
+        {
+            try
+            {
+                var actualUrl = $"{addr}uploads/{url}";
+                var result = await _httpClient.GetByteArrayAsync(actualUrl);
+                using (var ms = new MemoryStream(result))
+                {
+                    var img = Image.FromStream(ms);
+                    return new Bitmap(img);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.StackTrace);
+                return null;
+            }
         }
     }
 

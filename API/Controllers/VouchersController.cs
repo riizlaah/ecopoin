@@ -166,7 +166,7 @@ namespace EcoPoinAPI.Controllers
                 resident = new
                 {
                     id = rec.ResidentId,
-                    fullName = rec.Resident.FullName,
+                    name = rec.Resident.FullName,
                     email = rec.Resident.Email,
                 },
                 code = rec.Code,
@@ -184,7 +184,7 @@ namespace EcoPoinAPI.Controllers
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var voucher = dbc.Vouchers.Find(id);
             if (voucher == null) return Helper.err("Voucher not found", 404);
-            var user = dbc.Users.Include(u => u.RedeemedPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
+            var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
             if (user == null) return Helper.err("User not found", 404);
             if (user.Balance < voucher.PointCost) return Helper.err($"Insufficient points. Required: {voucher.PointCost}, available: {user.Balance}");
             dbc.RedemptionPoints.Add(new RedemptionPoint
