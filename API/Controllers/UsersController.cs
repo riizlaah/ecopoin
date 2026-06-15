@@ -78,7 +78,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Me()
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
+            var user = dbc.Users.Include(u => u.Deposits).ThenInclude(d => d.WasteType).Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
             if (user == null) return Helper.err("User not found", 404);
             return Helper.json(new
             {
@@ -90,6 +90,7 @@ namespace EcoPoinAPI.Controllers
                 role = user.Role,
                 balance = user.Balance,
                 environmentalImpact = user.EnvironmentalImpact,
+                totalSubmittedWeights = user.TotalSubmittedWeights
             }, "Profile fetched successfully");
         }
 
@@ -98,7 +99,7 @@ namespace EcoPoinAPI.Controllers
         public ActionResult Points()
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = dbc.Users.Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
+            var user = dbc.Users.Include(u => u.Deposits).ThenInclude(d => d.WasteType).Include(u => u.RedemptionPoints).Include(u => u.DepositPoints).FirstOrDefault(u => u.Id == userId);
             if (user == null) return Helper.err("User not found", 404);
             return Helper.json(new
             {

@@ -34,7 +34,31 @@ data class Profile(
     val phone: String,
     val role: String,
     val balance: Int,
-    val environmentalImpact: Double
+    val environmentalImpact: Double,
+    val totalSubmittedWeights: Double
+)
+
+data class MyRank(
+    val rank: Int,
+    val totalPoints: Int,
+    val fromTotal: Int
+)
+
+data class Tier(
+    val name: String,
+    val minPoints: Int,
+    val maxPoints: Int
+)
+
+data class Voucher(
+    val id: Int,
+    val name: String,
+    val pointCost: Int
+)
+
+data class Pagination(
+    val page: Int,
+    val totalPage: Int
 )
 
 object HttpClient {
@@ -44,6 +68,8 @@ object HttpClient {
     lateinit var prefs: SharedPreferences
 
     var profile by mutableStateOf<Profile?>(null)
+
+    var myRank by mutableStateOf<MyRank?>(null)
 
     fun loadToken() {
         token = prefs.getString("token", "") ?: ""
@@ -108,7 +134,6 @@ object HttpClient {
             if(res.code == 200) {
                 token = json.getJSONObject("data").getString("token")
                 saveToken()
-                me()
                 "ok"
             } else {
                 json.optString("message", "Login failed")
@@ -155,6 +180,7 @@ object HttpClient {
                 json.getString("role"),
                 json.getInt("balance"),
                 json.getDouble("environmentalImpact"),
+                json.getDouble("totalSubmittedWeights"),
             )
             res.code == 200
         } catch (e: Exception) {
@@ -162,4 +188,72 @@ object HttpClient {
             false
         }
     }
+
+    suspend fun myRank(): Boolean {
+        val res = jsonReq("leaderboard/my-rank")
+        if(res.body == null) return false
+        return try {
+            val json = JSONObject(res.body).getJSONObject("data")
+            myRank = MyRank(
+                json.getInt("rank"),
+                json.getInt("totalPoints"),
+                json.getInt("fromTotal"),
+            )
+            res.code == 200
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun getVouchers(page: Int = 1, size: Int = 10): Pair<Pagination?, List<Voucher>> {
+        val res = jsonReq("vouchers?page=$page&size=$size")
+        if(res.body == null) return Pair(null, emptyList())
+        return try {
+            val json = JSONObject(res.body)
+            val paging = json.getJSONObject("pagination")
+            val arrJson = json.getJSONArray("data")
+            val arr = mutableListOf<Voucher>()
+            for(i in 0 until arrJson.length()) {
+                val obj = arrJson.getJSONObject(i)
+                arr.add(Voucher(
+                    obj.getInt("id"),
+                    obj.getString("name"),
+                    obj.getInt("pointCost"),
+                ))
+            }
+            Pair(Pagination(
+                paging.getInt("page"),
+                paging.getInt("totalPage"),
+            ), arr)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, emptyList())
+        }
+    }
+
+}
+
+fun getTier(points: Int): Tier {
+    val tiers = listOf(
+        Tier("Bronze", 0, 499),
+        Tier("Silver", 500, 999),
+        Tier("Gold", 1000, 1999),
+        Tier("Platinum", 2000, 3999),
+        Tier("Diamond", 4000, 7999),
+        Tier("Emerald", 8000, 15999),
+    )
+    return tiers.first { it.minPoints <= points && points <= it.maxPoints }
+}
+fun getNextTier(points: Int): Tier {
+    val tiers = listOf(
+        Tier("Bronze", 0, 499),
+        Tier("Silver", 500, 999),
+        Tier("Gold", 1000, 1999),
+        Tier("Platinum", 2000, 3999),
+        Tier("Diamond", 4000, 7999),
+        Tier("Emerald", 8000, 15999),
+    )
+    val idx = tiers.indexOfFirst { it.minPoints <= points && points <= it.maxPoints }
+    return tiers[idx + 1]
 }

@@ -23,11 +23,14 @@ namespace EcoPoinAPI.Controllers
         [Authorize]
         public ActionResult GetAll(int page = 1, int size = 20, string search = "")
         {
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var isResident = dbc.Users.Where(u => u.Id == userId && u.Role == "resident").Any();
             var query = dbc.Vouchers.AsQueryable();
             if (search.Trim() != "")
             {
-                query = query.Where(w => EF.Functions.Like(w.Name, $"%{search}%") || EF.Functions.Like(w.Code, $"%{search}%"));
+                query = query.Where(v => EF.Functions.Like(v.Name, $"%{search}%") || EF.Functions.Like(v.Code, $"%{search}%"));
             }
+            if (isResident) query = query.Where(v => v.IsActive);
             var (error, result, paging) = Helper.Paginate(query, rec => new
             {
                 id = rec.Id,
@@ -228,4 +231,9 @@ namespace EcoPoinAPI.Controllers
         [Required] public int pointCost { get; set; }
         [Required] public bool isActive { get; set; }
     }
+
+    //public class VoucherRedeemDTO
+    //{
+    //    [Required] public int quantity { get; set; }
+    //}
 }

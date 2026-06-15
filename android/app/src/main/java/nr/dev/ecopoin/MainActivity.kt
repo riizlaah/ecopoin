@@ -278,6 +278,7 @@ class MainActivity : ComponentActivity() {
                                         Text("Register", fontWeight = FontWeight.Bold)
                                     }
                                 }
+                                Spacer(Modifier.height(24.dp))
                             }
                         }
                     }
