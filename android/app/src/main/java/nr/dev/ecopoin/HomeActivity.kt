@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
@@ -70,14 +71,14 @@ class HomeActivity : ComponentActivity() {
                             Modifier
                                 .weight(1f)
                                 .background(Color(0xfff8fafc))
-                                .padding(12.dp)
+                                .padding(horizontal = 12.dp)
                         ) {
                             item {
                                 when(currentTab) {
                                     0 -> HomeScreen({}, {}, {currentTab = 1})
                                     1 -> SubmitDepositScreen(Modifier.fillMaxSize().background(
                                         MaterialTheme.colorScheme.tertiary), {currentTab = backStack.removeAt(backStack.size - 1)})
-                                    2 -> {}
+                                    2 -> HistoryScreen(Modifier.fillMaxSize())
                                     3 -> {}
                                     4 -> {}
                                     else -> {}

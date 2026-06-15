@@ -23,12 +23,17 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public ActionResult GetAll(int page = 1, int size = 20)
+        public ActionResult GetAll(int page = 1, int size = 20, string status = "All")
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var role = User.FindFirstValue(ClaimTypes.Role) ?? "resident";
             var query = dbc.Deposits.Include(rec => rec.Resident).Include(rec => rec.WasteType).Include(rec => rec.DepositPoint)
                 .Include(rec => rec.Officer).OrderByDescending(rec => rec.UpdatedAt).AsQueryable();
+            var allowedStatus = new[] { "Pending", "Verified", "Rejected" };
+            if (allowedStatus.Contains(status))
+            {
+                query = query.Where(d => d.Status == status);
+            }
             if(role == "resident")
             {
                 query = query.Where(rec => rec.ResidentId == userId);
@@ -54,6 +59,7 @@ namespace EcoPoinAPI.Controllers
                     pointTariff = rec.WasteType.PointTariff,
                     isActive = rec.WasteType.IsActive
                 },
+                isCorrected = rec.ActualWeight.HasValue && rec.ActualWeight != rec.EstimatedWeight,
                 estimatedWeight = rec.EstimatedWeight,
                 estimatedPoints = (int)Math.Round(rec.EstimatedWeight * rec.WasteType.PointTariff),
                 actualWeight = rec.ActualWeight,
@@ -97,6 +103,7 @@ namespace EcoPoinAPI.Controllers
                     pointTariff = rec.WasteType.PointTariff,
                     isActive = rec.WasteType.IsActive
                 },
+                isCorrected = rec.ActualWeight.HasValue && rec.ActualWeight != rec.EstimatedWeight,
                 estimatedWeight = rec.EstimatedWeight,
                 estimatedPoints = (int)Math.Round(rec.EstimatedWeight * rec.WasteType.PointTariff),
                 actualWeight = rec.ActualWeight,

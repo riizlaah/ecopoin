@@ -16,6 +16,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDateTime
 
 data class HttpReq(
     val url: String,
@@ -67,6 +68,37 @@ data class WasteType(
     val id: Int,
     val name: String,
     val pointTariff: Int,
+)
+
+
+data class Deposit(
+    val id: Int,
+    val resident: Resident,
+    val wasteType: WasteType,
+    val isCorrected: Boolean,
+    val estimatedWeight: Double,
+    val estimatedPoints: Int,
+    val actualWeight: Double?,
+    val actualPoints: Int?,
+    val status: String,
+    val updatedAt: LocalDateTime? = null,
+    val createdAt: LocalDateTime? = null,
+    val officer: Officer? = null,
+    val notes: String? = null,
+    val rejectionReason: String? = null,
+    val photoPath: String? = null,
+)
+
+data class Resident(
+    val id: Int,
+    val name: String,
+    val email: String
+)
+
+data class Officer(
+    val id: Int,
+    val name: String,
+    val email: String
 )
 
 
@@ -306,6 +338,64 @@ object HttpClient {
         }
     }
 
+    suspend fun getDeposits(
+        page: Int = 1,
+        size: Int = 20,
+        status: String = "All"
+    ): Pair<Pagination?, List<Deposit>> {
+        val res = jsonReq("deposits?page=$page&size=$size")
+        if (res.body == null) return Pair(null, emptyList())
+        return try {
+            val json = JSONObject(res.body)
+            val paging = json.getJSONObject("pagination")
+            val arrJson = json.getJSONArray("data")
+            val arr = mutableListOf<Deposit>()
+            for (i in 0 until arrJson.length()) {
+                arrJson.getJSONObject(i).run {
+                    val resident = getJSONObject("resident").run {
+                        Resident(getInt("id"), getString("name"), getString("email"))
+                    }
+                    val wasteType = getJSONObject("wasteType").run {
+                        WasteType(
+                            getInt("id"),
+                            getString("name"),
+                            getInt("pointTariff")
+                        )
+                    }
+                    val officer = if(isNull("officer")) null else getJSONObject("officer").run {
+                        Officer(
+                            getInt("id"),
+                            getString("name"),
+                            getString("email")
+                        )
+                    }
+                    arr.add(
+                        Deposit(
+                            getInt("id"),
+                            resident,
+                            wasteType,
+                            getBoolean("isCorrected"),
+                            getDouble("estimatedWeight"),
+                            getInt("estimatedInt"),
+                            if(isNull("actualWeight")) null else getDouble("actualWeight"),
+                            if(isNull("actualPoints")) null else getInt("actualPoints"),
+                            getString("status"),
+                        )
+                    )
+                }
+            }
+            Pair(
+                Pagination(
+                    paging.getInt("page"),
+                    paging.getInt("totalPage"),
+                ), arr
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, emptyList())
+        }
+    }
+
     suspend fun getVouchers(page: Int = 1, size: Int = 10): Pair<Pagination?, List<Voucher>> {
         val res = jsonReq("vouchers?page=$page&size=$size")
         if (res.body == null) return Pair(null, emptyList())
@@ -367,21 +457,24 @@ object HttpClient {
         notes: String
     ): String {
         val res =
-            sendMultipart("deposits", mapOf("photo" to photo), others = mapOf(
-                "wasteTypeId" to wasteTypeId.toString(),
-                "estimatedWeight" to estimatedWeight.toString().replace('.', ','),
-                "notes" to notes
-            ))
-        if(res.body == null) return "Failed to submit"
+            sendMultipart(
+                "deposits", mapOf("photo" to photo), others = mapOf(
+                    "wasteTypeId" to wasteTypeId.toString(),
+                    "estimatedWeight" to estimatedWeight.toString().replace('.', ','),
+                    "notes" to notes
+                )
+            )
+        if (res.body == null) return "Failed to submit"
         return try {
             val json = JSONObject(res.body)
-            if(res.code == 200) return "ok"
+            if (res.code == 200) return "ok"
             else json.optString("message", "Failed to submit")
         } catch (e: Exception) {
             e.printStackTrace()
             "Failed to submit"
         }
     }
+
 
 }
 
@@ -424,3 +517,4 @@ fun ContentResolver.asBitmap(uri: Uri): ImageBitmap? {
         null
     }
 }
+
