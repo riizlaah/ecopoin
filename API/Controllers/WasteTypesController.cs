@@ -21,14 +21,17 @@ namespace EcoPoinAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "admin")]
+        [Authorize]
         public ActionResult GetAll(int page = 1, int size = 20, string search = "")
         {
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var isAdmin = dbc.Users.Any(u => u.Id == userId && u.Role == "admin");
             var query = dbc.WasteTypes.AsQueryable();
             if (search.Trim() != "")
             {
                 query = query.Where(w => EF.Functions.Like(w.Name, $"%{search}%") || EF.Functions.Like(w.Code, $"%{search}%"));
             }
+            if (!isAdmin) query = query.Where(w => w.IsActive);
             var (error, result, paging) = Helper.Paginate(query, rec => new
             {
                 id = rec.Id,

@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import nr.dev.ecopoin.ui.theme.EcoPoinTheme
 import kotlin.math.min
 
+
+data class TabItem(val name: String, val iconId: Int)
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,15 +47,20 @@ class HomeActivity : ComponentActivity() {
                             .fillMaxSize(1f)
                             .padding(innerPadding)
                     ) {
-                        val tabs = mapOf(
-                            "Home" to R.drawable.house,
-                            "Submit" to R.drawable.upload,
-                            "History" to R.drawable.clock_4,
-                            "Reward" to R.drawable.gift,
-                            "Ranking" to R.drawable.trophy
+                        val tabs = listOf(
+                            TabItem("Home" , R.drawable.house),
+                            TabItem("Submit" , R.drawable.upload),
+                            TabItem("History" , R.drawable.clock_4),
+                            TabItem("Reward" , R.drawable.gift),
+                            TabItem("Ranking" , R.drawable.trophy)
                         )
                         var currentTab by remember { mutableIntStateOf(0) }
                         val backStack = remember { mutableStateListOf(0) }
+
+                        LaunchedEffect(currentTab) {
+                            if(backStack.isEmpty()) return@LaunchedEffect
+                            if(backStack.last() != currentTab) backStack.add(currentTab)
+                        }
 
                         BackHandler(backStack.isNotEmpty()) {
                             currentTab = backStack.removeAt(backStack.size - 1)
@@ -67,8 +74,9 @@ class HomeActivity : ComponentActivity() {
                         ) {
                             item {
                                 when(currentTab) {
-                                    0 -> HomeScreen({}, {}, {})
-                                    1 -> {}
+                                    0 -> HomeScreen({}, {}, {currentTab = 1})
+                                    1 -> SubmitDepositScreen(Modifier.fillMaxSize().background(
+                                        MaterialTheme.colorScheme.tertiary), {currentTab = backStack.removeAt(backStack.size - 1)})
                                     2 -> {}
                                     3 -> {}
                                     4 -> {}
@@ -77,13 +85,11 @@ class HomeActivity : ComponentActivity() {
                             }
                         }
                         PrimaryTabRow(currentTab, containerColor = Color.White) {
-                            var idx = 0
-                            tabs.forEach { (name, iconId) ->
+                            tabs.forEachIndexed { idx, item ->
                                 Tab(idx == currentTab, {currentTab = idx}, modifier = Modifier.padding(12.dp)) {
-                                    Icon(painterResource(iconId), contentDescription = name)
-                                    Text(name, fontSize = MaterialTheme.typography.labelMedium.fontSize)
+                                    Icon(painterResource(item.iconId), contentDescription = item.name)
+                                    Text(item.name, fontSize = MaterialTheme.typography.labelMedium.fontSize)
                                 }
-                                idx += min(idx, 4)
                             }
                         }
                     }

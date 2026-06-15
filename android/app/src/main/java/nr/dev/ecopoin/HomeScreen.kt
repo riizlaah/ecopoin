@@ -4,6 +4,7 @@ import android.content.Intent
 import android.icu.text.DecimalFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +80,8 @@ fun HomeScreen(onRank: () -> Unit, onVouchers: () -> Unit, onSubmitTrash: () -> 
         IconButton(
             {
                 HttpClient.token = ""
+                HttpClient.profile = null
+                HttpClient.myRank = null
                 HttpClient.saveToken()
                 val int = Intent(ctx, MainActivity::class.java).apply {
                     flags =
@@ -254,7 +257,8 @@ fun HomeScreen(onRank: () -> Unit, onVouchers: () -> Unit, onSubmitTrash: () -> 
             .clip(RoundedCornerShape(12.dp))
             .background(Color.White)
             .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
-            .padding(12.dp),
+            .padding(12.dp)
+            .clickable(onClick = onRank),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -292,7 +296,7 @@ fun HomeScreen(onRank: () -> Unit, onVouchers: () -> Unit, onSubmitTrash: () -> 
     }
 
     Button(
-        {},
+        onSubmitTrash,
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(18.dp)
@@ -311,7 +315,7 @@ fun HomeScreen(onRank: () -> Unit, onVouchers: () -> Unit, onSubmitTrash: () -> 
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("Exchange Points", fontWeight = FontWeight.Medium)
-        TextButton({}) {
+        TextButton(onVouchers) {
             Text("See more")
         }
     }
