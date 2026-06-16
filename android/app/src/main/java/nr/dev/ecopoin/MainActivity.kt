@@ -142,7 +142,7 @@ class MainActivity : ComponentActivity() {
                                         loading = false
                                     }
 
-                                }, Modifier.fillMaxWidth(), shape = corner(12.dp)) {
+                                }, Modifier.fillMaxWidth(), shape = corner(12.dp), enabled = !loading) {
                                     LoadingOrContent(loading) {
                                         Text("Login")
                                     }
@@ -206,7 +206,7 @@ class MainActivity : ComponentActivity() {
                                         loading = false
                                     }
 
-                                }, Modifier.fillMaxWidth(), shape = corner(12.dp)) {
+                                }, Modifier.fillMaxWidth(), shape = corner(12.dp), enabled = !loading) {
                                     LoadingOrContent(loading) {
                                         Text("Register")
                                     }

@@ -14,6 +14,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDateTime
 
 data class HttpReq(
     val url: String,
@@ -60,11 +61,53 @@ data class Voucher(
     val pointCost: Int
 )
 
+data class RedeemedVoucher(
+    val id: Int,
+    val voucher: Voucher,
+    val code: String,
+    val amount: Int,
+    val isUsed: Boolean,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+)
+
 data class WasteType(
     val id: Int,
     val name: String,
     val pointTariff: Int,
     val co2Factor: Double? = null
+)
+
+data class Deposit(
+    val id: Int,
+    val resident: UserShort,
+    val wasteType: WasteType,
+    val isCorrected: Boolean,
+    val estimatedWeight: Double,
+    val estimatedPoints: Int,
+    val actualWeight: Double? = null,
+    val actualPoints: Int? = null,
+    val status: String,
+    val updatedAt: LocalDateTime,
+    val officer: UserShort? = null,
+    val notes: String? = null,
+    val rejectionReason: String? = null,
+    val photoPath: String? = null,
+    val createdAt: LocalDateTime? = null
+)
+
+data class UserShort(
+    val id: Int,
+    val name: String,
+    val email: String
+)
+
+data class UserRank(
+    val rank: Int,
+    val fullName: String,
+    val totalPoints: Int,
+    val currentBalance: Int,
+    val environmentalImpact: Double
 )
 
 data class File(
@@ -255,7 +298,7 @@ object HttpClient {
             val json = JSONObject(res.body).getJSONObject("data")
             myRank = json.run {
                 MyRank(
-                    getInt("id"),
+                    getInt("rank"),
                     getInt("totalPoints"),
                     getInt("fromTotal"),
                 )
@@ -322,6 +365,120 @@ object HttpClient {
         } catch (e: Exception) {
             e.printStackTrace()
             "Submit failed"
+        }
+    }
+
+    suspend fun getDeposits(page: Int = 1, size: Int = 20, status: String = "All"): Pair<Pagination?, List<Deposit>> {
+        val res = jsonReq("deposits?page=$page&size=$size&status=$status")
+        if(res.body == null || res.code != 200) return Pair(null, emptyList())
+        return try {
+            val json = JSONObject(res.body)
+            val paging = json.getJSONObject("pagination").run {
+                Pagination(getInt("page"), getInt("totalPage"))
+            }
+            val arr = mutableListOf<Deposit>()
+            val arrJson = json.getJSONArray("data")
+            for(i in 0 until arrJson.length()) {
+                val obj = arrJson.getJSONObject(i)
+                val resident = obj.getJSONObject("resident").run { UserShort(getInt("id"), getString("name"), getString("email")) }
+                val wasteType = obj.getJSONObject("wasteType").run { WasteType(getInt("id"), getString("name"), getInt("pointTariff")) }
+                arr.add(obj.run {
+                    Deposit(
+                        getInt("id"),
+                        resident,
+                        wasteType,
+                        getBoolean("isCorrected"),
+                        getDouble("estimatedWeight"),
+                        getInt("estimatedWeight"),
+                        if(isNull("actualWeight")) null else getDouble("actualWeight"),
+                        if(isNull("actualPoints")) null else getInt("actualPoints"),
+                        getString("status"),
+                        LocalDateTime.parse(getString("updatedAt"))
+                    )
+                })
+            }
+            Pair(paging, arr)
+        } catch(e: Exception) {
+            e.printStackTrace()
+            Pair(null, emptyList())
+        }
+    }
+
+    suspend fun getRedeemedVoucher(page: Int = 1, size: Int = 20, status: String = "All"): Pair<Pagination?, List<RedeemedVoucher>> {
+        val res = jsonReq("vouchers/history?page=$page&size=$size&status=$status")
+        if(res.body == null || res.code != 200) return Pair(null, emptyList())
+        return try {
+            val json = JSONObject(res.body)
+            val paging = json.getJSONObject("pagination").run {
+                Pagination(getInt("page"), getInt("totalPage"))
+            }
+            val arr = mutableListOf<RedeemedVoucher>()
+            val arrJson = json.getJSONArray("data")
+            for(i in 0 until arrJson.length()) {
+                val obj = arrJson.getJSONObject(i)
+                val voucher = obj.getJSONObject("voucher").run { Voucher(getInt("id"), getString("name"), getInt("pointCost")) }
+                arr.add(obj.run {
+                    RedeemedVoucher(
+                        getInt("id"),
+                        voucher,
+                        getString("code"),
+                        getInt("amount"),
+                        getBoolean("isUsed"),
+                        LocalDateTime.parse(getString("createdAt")),
+                        LocalDateTime.parse(getString("updatedAt")),
+                    )
+                })
+            }
+            Pair(paging, arr)
+        } catch(e: Exception) {
+            e.printStackTrace()
+            Pair(null, emptyList())
+        }
+    }
+
+    suspend fun redeemVoucher(id: Int): String {
+        val res = jsonReq("vouchers/$id/redeem", "POST")
+        if(res.body == null) return "Redeem failed"
+        return try {
+            val json = JSONObject(res.body)
+            if(res.code == 200) {
+                "ok"
+            } else {
+                json.optString("message", "Redeem failed")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Redeem failed"
+        }
+    }
+
+    suspend fun getLeaderboard(page: Int = 1, size: Int = 20, range: String = "thismonth"): Pair<Pagination?, List<UserRank>> {
+        val res = jsonReq("leaderboard?page=$page&size=$size&range=$range")
+        println(res)
+        if(res.body == null || res.code != 200) return Pair(null, emptyList())
+        return try {
+            val json = JSONObject(res.body)
+            val paging = json.getJSONObject("pagination").run {
+                Pagination(getInt("page"), getInt("totalPage"))
+            }
+            val arr = mutableListOf<UserRank>()
+            val arrJson = json.getJSONArray("data")
+            for(i in 0 until arrJson.length()) {
+                val obj = arrJson.getJSONObject(i)
+                arr.add(obj.run {
+                    UserRank(
+                        getInt("rank"),
+                        getString("fullName"),
+                        getInt("totalPoints"),
+                        getInt("currentBalance"),
+                        getDouble("environmentalImpact"),
+                    )
+                })
+            }
+            Pair(paging, arr)
+        } catch(e: Exception) {
+            e.printStackTrace()
+            Pair(null, emptyList())
         }
     }
 }
