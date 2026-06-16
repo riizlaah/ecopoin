@@ -2,13 +2,11 @@ package nr.dev.ecopoin
 
 import android.content.ContentResolver
 import android.content.SharedPreferences
-import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.compose.runtime.getValue
+import android.provider.OpenableColumns
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +14,6 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDateTime
 
 data class HttpReq(
     val url: String,
@@ -31,7 +28,7 @@ data class HttpRes(
     val code: Int,
     val body: String? = null,
     val bytes: ByteArray? = null,
-    val errors: String? = null,
+    val error: String? = null
 )
 
 data class Profile(
@@ -52,10 +49,9 @@ data class MyRank(
     val fromTotal: Int
 )
 
-data class Tier(
-    val name: String,
-    val minPoints: Int,
-    val maxPoints: Int
+data class Pagination(
+    val page: Int,
+    val totalPage: Int
 )
 
 data class Voucher(
@@ -68,60 +64,21 @@ data class WasteType(
     val id: Int,
     val name: String,
     val pointTariff: Int,
-)
-
-
-data class Deposit(
-    val id: Int,
-    val resident: Resident,
-    val wasteType: WasteType,
-    val isCorrected: Boolean,
-    val estimatedWeight: Double,
-    val estimatedPoints: Int,
-    val actualWeight: Double?,
-    val actualPoints: Int?,
-    val status: String,
-    val updatedAt: LocalDateTime? = null,
-    val createdAt: LocalDateTime? = null,
-    val officer: Officer? = null,
-    val notes: String? = null,
-    val rejectionReason: String? = null,
-    val photoPath: String? = null,
-)
-
-data class Resident(
-    val id: Int,
-    val name: String,
-    val email: String
-)
-
-data class Officer(
-    val id: Int,
-    val name: String,
-    val email: String
-)
-
-
-data class Pagination(
-    val page: Int,
-    val totalPage: Int
+    val co2Factor: Double? = null
 )
 
 data class File(
     val name: String,
-    val content: ByteArray,
-    val mimetype: String = "application/octet-stream"
+    val mimetype: String,
+    val content: ByteArray
 )
-
 
 object HttpClient {
     val addr = "http://10.0.2.2:5000/"
-
     var token = ""
     lateinit var prefs: SharedPreferences
 
     var profile by mutableStateOf<Profile?>(null)
-
     var myRank by mutableStateOf<MyRank?>(null)
 
     fun loadToken() {
@@ -134,7 +91,6 @@ object HttpClient {
         }
     }
 
-
     fun send(req: HttpReq, getByte: Boolean = false): HttpRes {
         val conn = URL(req.url).openConnection() as HttpURLConnection
         return try {
@@ -143,28 +99,21 @@ object HttpClient {
                 readTimeout = req.timeout
                 connectTimeout = req.timeout
                 req.headers.forEach { (k, v) -> setRequestProperty(k, v) }
-                if ((req.body.isNotEmpty() || req.bytes != null) && req.method in listOf(
-                        "POST",
-                        "PUT",
-                        "PATCH"
-                    )
-                ) {
-                    getOutputStream().buffered().use {
-                        it.write(req.bytes ?: req.body.toByteArray())
-                    }
+                if((req.body.isNotEmpty() || req.bytes != null) && req.method in listOf("POST", "PUT", "PATCH")) {
+                    getOutputStream().buffered().use { it.write(req.bytes ?: req.body.toByteArray()) }
                 }
-                connect()
 
+                connect()
                 val code = responseCode
-                val body = if (getByte) null else {
-                    if (code in 200..299) {
+                val body = if(getByte) null else {
+                    if(code in 200..299) {
                         getInputStream().bufferedReader().use { it.readText() }
                     } else {
                         errorStream?.bufferedReader()?.use { it.readText() }
                     }
                 }
-                val bytes = if (!getByte) null else {
-                    if (code in 200..299) {
+                val bytes = if(!getByte) null else {
+                    if(code in 200..299) {
                         getInputStream().buffered().use { it.readBytes() }
                     } else {
                         errorStream?.buffered()?.use { it.readBytes() }
@@ -174,39 +123,31 @@ object HttpClient {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            HttpRes(-1, errors = e.message ?: "Unknown error")
+            HttpRes(-1, e.message ?: "Network error")
+        } finally {
+            conn.disconnect()
         }
     }
 
     suspend fun jsonReq(route: String, method: String = "GET", body: String = ""): HttpRes {
         return withContext(Dispatchers.IO) {
-            val url = "${addr}ecopoin-api-v1/${route}"
-            val headers = if (token.isNotEmpty()) mapOf(
-                "content-type" to "application/json",
-                "authorization" to "Bearer $token"
-            ) else mapOf("content-type" to "application/json")
-            send(HttpReq(url, method, body, headers))
+            val headers = if(token.isNotEmpty()) mapOf("content-type" to "application/json", "authorization" to "Bearer $token") else mapOf("content-type" to "application/json")
+            send(HttpReq("${addr}ecopoin-api-v1/$route", method, body, headers))
         }
     }
 
-    suspend fun sendMultipart(
-        route: String,
-        files: Map<String, File>,
-        others: Map<String, String> = emptyMap(),
-        method: String = "POST"
-    ): HttpRes {
-        val boundary = "----WebkitFormBoundary${System.currentTimeMillis()}"
-        val boundaryBytes = boundary.toByteArray()
-        val crlf = "\r\n".toByteArray()
-        val twoH = "--".toByteArray()
-        val outputStream = ByteArrayOutputStream()
+    suspend fun sendMultipart(route: String, files: Map<String, File>, others: Map<String, String> = emptyMap(), method: String = "POST"): HttpRes {
         return try {
             withContext(Dispatchers.IO) {
-
-                others.forEach { (k, v) ->
-                    outputStream.run {
+                val boundary = "----WebkitFormBoundary${System.currentTimeMillis()}"
+                val boundaryB = boundary.toByteArray()
+                val crlf = "\r\n".toByteArray()
+                val twoH = "--".toByteArray()
+                val output = ByteArrayOutputStream()
+                output.run {
+                    others.forEach { (k, v) ->
                         write(twoH)
-                        write(boundaryBytes)
+                        write(boundaryB)
                         write(crlf)
                         write("Content-Disposition: form-data; name=\"$k\"".toByteArray())
                         write(crlf)
@@ -214,11 +155,9 @@ object HttpClient {
                         write(v.toByteArray())
                         write(crlf)
                     }
-                }
-                files.forEach { (k, file) ->
-                    outputStream.run {
+                    files.forEach { (k, file) ->
                         write(twoH)
-                        write(boundaryBytes)
+                        write(boundaryB)
                         write(crlf)
                         write("Content-Disposition: form-data; name=\"$k\"; filename=\"${file.name}\"".toByteArray())
                         write(crlf)
@@ -228,34 +167,28 @@ object HttpClient {
                         write(file.content)
                         write(crlf)
                     }
-                }
-                outputStream.run {
                     write(twoH)
-                    write(boundaryBytes)
+                    write(boundaryB)
                     write(twoH)
                     write(crlf)
                 }
-                val bytes = outputStream.toByteArray()
-                val headers = mapOf(
-                    "content-type" to "multipart/form-data; boundary=$boundary",
-                    "authorization" to "Bearer $token"
-                )
-                send(HttpReq("${addr}ecopoin-api-v1/$route", method, "", headers, bytes))
+                val headers = mapOf("content-type" to "multipart/form-data; boundary=$boundary", "authorization" to "Bearer $token")
+                send(HttpReq("${addr}ecopoin-api-v1/$route", method, headers = headers, bytes = output.toByteArray()))
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            HttpRes(-1, errors = e.message ?: "Unknown error")
+            HttpRes(-1, e.message ?: "Parsing error")
         }
-
     }
 
     suspend fun login(username: String, password: String): String {
-        val res =
-            jsonReq("users/login", "POST", """{"username": "$username", "password": "$password"}""")
-        if (res.body == null) return "Login failed"
+        val res = jsonReq("users/login", "POST", """{
+  "username": "$username",
+  "password": "$password"}""")
+        if(res.body == null) return "Login failed"
         return try {
             val json = JSONObject(res.body)
-            if (res.code == 200) {
+            if(res.code == 200) {
                 token = json.getJSONObject("data").getString("token")
                 saveToken()
                 "ok"
@@ -264,56 +197,50 @@ object HttpClient {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            "Login Failed"
+            "Login failed"
         }
     }
 
-    suspend fun register(
-        username: String,
-        fullName: String,
-        email: String,
-        phone: String,
-        password: String
-    ): String {
-        val res = jsonReq(
-            "users/register", "POST", """{
+    suspend fun register(username: String, fullName: String, email: String, phone: String, password: String): String {
+        val res = jsonReq("users/register", "POST", """{
   "username": "$username",
   "fullName": "$fullName",
   "email": "$email",
   "phone": "$phone",
   "password": "$password"
-}"""
-        )
-        if (res.body == null) return "Register failed"
+}""")
+        if(res.body == null) return "Register failed"
         return try {
             val json = JSONObject(res.body)
-            if (res.code == 200) {
+            if(res.code == 200) {
                 "ok"
             } else {
                 json.optString("message", "Register failed")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            "Register Failed"
+            "Register failed"
         }
     }
 
     suspend fun me(): Boolean {
         val res = jsonReq("users/me")
-        if (res.body == null) return false
+        if(res.body == null) return false
         return try {
             val json = JSONObject(res.body).getJSONObject("data")
-            profile = Profile(
-                json.getInt("id"),
-                json.getString("username"),
-                json.getString("fullName"),
-                json.getString("email"),
-                json.getString("phone"),
-                json.getString("role"),
-                json.getInt("balance"),
-                json.getDouble("environmentalImpact"),
-                json.getDouble("totalSubmittedWeights"),
-            )
+            profile = json.run {
+                Profile(
+                    getInt("id"),
+                    getString("username"),
+                    getString("fullName"),
+                    getString("email"),
+                    getString("phone"),
+                    getString("role"),
+                    getInt("balance"),
+                    getDouble("environmentalImpact"),
+                    getDouble("totalSubmittedWeights"),
+                )
+            }
             res.code == 200
         } catch (e: Exception) {
             e.printStackTrace()
@@ -323,14 +250,16 @@ object HttpClient {
 
     suspend fun myRank(): Boolean {
         val res = jsonReq("leaderboard/my-rank")
-        if (res.body == null) return false
+        if(res.body == null) return false
         return try {
             val json = JSONObject(res.body).getJSONObject("data")
-            myRank = MyRank(
-                json.getInt("rank"),
-                json.getInt("totalPoints"),
-                json.getInt("fromTotal"),
-            )
+            myRank = json.run {
+                MyRank(
+                    getInt("id"),
+                    getInt("totalPoints"),
+                    getInt("fromTotal"),
+                )
+            }
             res.code == 200
         } catch (e: Exception) {
             e.printStackTrace()
@@ -338,145 +267,70 @@ object HttpClient {
         }
     }
 
-    suspend fun getDeposits(
-        page: Int = 1,
-        size: Int = 20,
-        status: String = "All"
-    ): Pair<Pagination?, List<Deposit>> {
-        val res = jsonReq("deposits?page=$page&size=$size")
-        if (res.body == null) return Pair(null, emptyList())
-        return try {
-            val json = JSONObject(res.body)
-            val paging = json.getJSONObject("pagination")
-            val arrJson = json.getJSONArray("data")
-            val arr = mutableListOf<Deposit>()
-            for (i in 0 until arrJson.length()) {
-                arrJson.getJSONObject(i).run {
-                    val resident = getJSONObject("resident").run {
-                        Resident(getInt("id"), getString("name"), getString("email"))
-                    }
-                    val wasteType = getJSONObject("wasteType").run {
-                        WasteType(
-                            getInt("id"),
-                            getString("name"),
-                            getInt("pointTariff")
-                        )
-                    }
-                    val officer = if(isNull("officer")) null else getJSONObject("officer").run {
-                        Officer(
-                            getInt("id"),
-                            getString("name"),
-                            getString("email")
-                        )
-                    }
-                    arr.add(
-                        Deposit(
-                            getInt("id"),
-                            resident,
-                            wasteType,
-                            getBoolean("isCorrected"),
-                            getDouble("estimatedWeight"),
-                            getInt("estimatedInt"),
-                            if(isNull("actualWeight")) null else getDouble("actualWeight"),
-                            if(isNull("actualPoints")) null else getInt("actualPoints"),
-                            getString("status"),
-                        )
-                    )
-                }
-            }
-            Pair(
-                Pagination(
-                    paging.getInt("page"),
-                    paging.getInt("totalPage"),
-                ), arr
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair(null, emptyList())
-        }
-    }
-
-    suspend fun getVouchers(page: Int = 1, size: Int = 10): Pair<Pagination?, List<Voucher>> {
+    suspend fun getVouchers(page: Int = 1, size: Int = 20): Pair<Pagination?, List<Voucher>> {
         val res = jsonReq("vouchers?page=$page&size=$size")
-        if (res.body == null) return Pair(null, emptyList())
+        if(res.body == null || res.code != 200) return Pair(null, emptyList())
         return try {
             val json = JSONObject(res.body)
-            val paging = json.getJSONObject("pagination")
-            val arrJson = json.getJSONArray("data")
-            val arr = mutableListOf<Voucher>()
-            for (i in 0 until arrJson.length()) {
-                val obj = arrJson.getJSONObject(i)
-                arr.add(
-                    Voucher(
-                        obj.getInt("id"),
-                        obj.getString("name"),
-                        obj.getInt("pointCost"),
-                    )
-                )
+            val paging = json.getJSONObject("pagination").run {
+                Pagination(getInt("page"), getInt("totalPage"))
             }
-            Pair(
-                Pagination(
-                    paging.getInt("page"),
-                    paging.getInt("totalPage"),
-                ), arr
-            )
-        } catch (e: Exception) {
+            val arr = mutableListOf<Voucher>()
+            val arrJson = json.getJSONArray("data")
+            for(i in 0 until arrJson.length()) {
+                arr.add(arrJson.getJSONObject(i).run {
+                    Voucher(getInt("id"), getString("name"), getInt("pointCost"))
+                })
+            }
+            Pair(paging, arr)
+        } catch(e: Exception) {
             e.printStackTrace()
             Pair(null, emptyList())
         }
     }
 
-    suspend fun getWasteTypes(size: Int = 32): List<WasteType> {
-        val res = jsonReq("wastetypes?page=1&size=$size")
-        if (res.body == null) return emptyList()
+    suspend fun getWasteTypes(): List<WasteType> {
+        val res = jsonReq("wasteTypes?page=1&size=20")
+        if(res.body == null || res.code != 200) return emptyList()
         return try {
             val json = JSONObject(res.body)
-            val arrJson = json.getJSONArray("data")
             val arr = mutableListOf<WasteType>()
-            for (i in 0 until arrJson.length()) {
-                val obj = arrJson.getJSONObject(i)
-                arr.add(
-                    WasteType(
-                        obj.getInt("id"),
-                        obj.getString("name"),
-                        obj.getInt("pointTariff"),
-                    )
-                )
+            val arrJson = json.getJSONArray("data")
+            for(i in 0 until arrJson.length()) {
+                arr.add(arrJson.getJSONObject(i).run {
+                    WasteType(getInt("id"), getString("name"), getInt("pointTariff"))
+                })
             }
             arr
-        } catch (e: Exception) {
+        } catch(e: Exception) {
             e.printStackTrace()
             emptyList()
         }
     }
 
-    suspend fun submitDeposit(
-        estimatedWeight: Double,
-        wasteTypeId: Int,
-        photo: File,
-        notes: String
-    ): String {
-        val res =
-            sendMultipart(
-                "deposits", mapOf("photo" to photo), others = mapOf(
-                    "wasteTypeId" to wasteTypeId.toString(),
-                    "estimatedWeight" to estimatedWeight.toString().replace('.', ','),
-                    "notes" to notes
-                )
-            )
-        if (res.body == null) return "Failed to submit"
+    suspend fun submitTrash(wasteTypeId: Int, estimatedWeight: Double, photo: File, notes: String): String {
+        val res = sendMultipart("deposits", mapOf("photo" to photo), mapOf(
+            "wasteTypeId" to wasteTypeId.toString(),
+            "estimatedWeight" to estimatedWeight.toString().replace('.',','),
+            "notes" to notes
+        ))
+        if(res.body == null) return "Submit failed"
         return try {
             val json = JSONObject(res.body)
-            if (res.code == 200) return "ok"
-            else json.optString("message", "Failed to submit")
+            if(res.code == 200) return "ok"
+            else json.optString("message", "Submit failed")
         } catch (e: Exception) {
             e.printStackTrace()
-            "Failed to submit"
+            "Submit failed"
         }
     }
-
-
 }
+
+data class Tier(
+    val name: String,
+    val minPoints: Int,
+    val maxPoints: Int
+)
 
 fun getTier(points: Int): Tier {
     val tiers = listOf(
@@ -485,7 +339,6 @@ fun getTier(points: Int): Tier {
         Tier("Gold", 1000, 1999),
         Tier("Platinum", 2000, 3999),
         Tier("Diamond", 4000, 7999),
-        Tier("Emerald", 8000, 15999),
     )
     return tiers.first { it.minPoints <= points && points <= it.maxPoints }
 }
@@ -497,24 +350,34 @@ fun getNextTier(points: Int): Tier {
         Tier("Gold", 1000, 1999),
         Tier("Platinum", 2000, 3999),
         Tier("Diamond", 4000, 7999),
-        Tier("Emerald", 8000, 15999),
     )
     val idx = tiers.indexOfFirst { it.minPoints <= points && points <= it.maxPoints }
     return tiers[idx + 1]
 }
 
-fun ContentResolver.asBitmap(uri: Uri): ImageBitmap? {
+fun ContentResolver.getFilename(uri: Uri): String? {
     return try {
-        openInputStream(uri)?.use {
-            it
-            val bytes = it.buffered().use { b ->
-                b.readBytes()
+        query(uri, null, null, null, null)?.use { q ->
+            val idx = q.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if(idx != -1 && q.moveToFirst()) {
+                q.getString(idx)
+            } else {
+                null
             }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size).asImageBitmap()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
         null
     }
 }
 
+suspend fun ContentResolver.getBytes(uri: Uri): ByteArray? {
+    return try {
+        withContext(Dispatchers.IO) {
+            openInputStream(uri)?.use { s ->
+                s.buffered().use { it.readBytes() }
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+}

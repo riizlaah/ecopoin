@@ -18,20 +18,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import nr.dev.ecopoin.ui.theme.EcoPoinTheme
-import kotlin.math.min
 
-
-data class TabItem(val name: String, val iconId: Int)
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,57 +36,76 @@ class HomeActivity : ComponentActivity() {
         setContent {
             EcoPoinTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LaunchedEffect(Unit) {
-                        if(HttpClient.profile == null) HttpClient.me()
-                        HttpClient.myRank()
-                    }
                     Column(
                         Modifier
-                            .fillMaxSize(1f)
+                            .fillMaxSize()
                             .padding(innerPadding)
+                            .background(Color(0xfff8fafc))
                     ) {
                         val tabs = listOf(
-                            TabItem("Home" , R.drawable.house),
-                            TabItem("Submit" , R.drawable.upload),
-                            TabItem("History" , R.drawable.clock_4),
-                            TabItem("Reward" , R.drawable.gift),
-                            TabItem("Ranking" , R.drawable.trophy)
+                            Pair("Home", R.drawable.house),
+                            Pair("Submit", R.drawable.upload),
+                            Pair("History", R.drawable.clock),
+                            Pair("Reward", R.drawable.gift),
+                            Pair("Ranking", R.drawable.trophy),
                         )
-                        var currentTab by remember { mutableIntStateOf(0) }
+                        var selectedTab by remember { mutableIntStateOf(0) }
                         val backStack = remember { mutableStateListOf(0) }
 
-                        LaunchedEffect(currentTab) {
-                            if(backStack.isEmpty()) return@LaunchedEffect
-                            if(backStack.last() != currentTab) backStack.add(currentTab)
-                        }
-
                         BackHandler(backStack.isNotEmpty()) {
-                            currentTab = backStack.removeAt(backStack.size - 1)
+                            selectedTab = backStack.removeAt(backStack.size - 1)
                         }
 
-                        LazyColumn(
-                            Modifier
-                                .weight(1f)
-                                .background(Color(0xfff8fafc))
-                                .padding(horizontal = 12.dp)
-                        ) {
+                        LaunchedEffect(selectedTab) {
+                            if (backStack.isEmpty()) {
+                                backStack.add(selectedTab)
+                            } else if (backStack.last() != selectedTab) {
+                                backStack.add(selectedTab)
+                            }
+                        }
+
+                        LazyColumn(Modifier.weight(1f)) {
                             item {
-                                when(currentTab) {
-                                    0 -> HomeScreen({}, {}, {currentTab = 1})
-                                    1 -> SubmitDepositScreen(Modifier.fillMaxSize().background(
-                                        MaterialTheme.colorScheme.tertiary), {currentTab = backStack.removeAt(backStack.size - 1)})
-                                    2 -> HistoryScreen(Modifier.fillMaxSize())
+                                when (selectedTab) {
+                                    0 -> HomeScreen(
+                                        Modifier.fillMaxWidth(),
+                                        { selectedTab = 4 },
+                                        { selectedTab = 3 },
+                                        { selectedTab = 1 })
+
+                                    1 -> SubmitScreen(
+                                        Modifier.fillMaxWidth(),
+                                        {
+                                            selectedTab =
+                                                if (backStack.isNotEmpty()) backStack.removeAt(
+                                                    backStack.size - 1
+                                                ) else 0
+                                        })
+
+                                    2 -> {}
                                     3 -> {}
                                     4 -> {}
-                                    else -> {}
                                 }
                             }
                         }
-                        PrimaryTabRow(currentTab, containerColor = Color.White) {
-                            tabs.forEachIndexed { idx, item ->
-                                Tab(idx == currentTab, {currentTab = idx}, modifier = Modifier.padding(12.dp)) {
-                                    Icon(painterResource(item.iconId), contentDescription = item.name)
-                                    Text(item.name, fontSize = MaterialTheme.typography.labelMedium.fontSize)
+                        PrimaryTabRow(
+                            selectedTab,
+                            containerColor = Color.White,
+                            contentColor = Color.Unspecified
+                        ) {
+                            tabs.forEachIndexed { idx, (name, id) ->
+                                val selected = idx == selectedTab
+                                Tab(selected, { selectedTab = idx }, Modifier.padding(8.dp)) {
+                                    Icon(
+                                        painterResource(id),
+                                        contentDescription = name,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else Color.Gray
+                                    )
+                                    Text(
+                                        name,
+                                        fontSize = MaterialTheme.typography.labelSmall.fontSize,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else Color.Gray
+                                    )
                                 }
                             }
                         }

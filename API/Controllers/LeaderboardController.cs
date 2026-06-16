@@ -20,16 +20,21 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public ActionResult GetAll(int page = 1, int size = 10)
+        public ActionResult GetAll(int page = 1, int size = 10, string range = "alltime")
         {
-            var query = dbc.Users.Where(u => u.Role == "resident").Include(d => d.RedemptionPoints).Include(d => d.DepositPoints).ThenInclude(d => d.Deposit).ThenInclude(d => d.WasteType).OrderByDescending(u => u.DepositPoints.Sum(d => d.Amount));
+            var allowed = new[] { "alltime", "thismonth" };
+            if (!allowed.Contains(range)) return Helper.err("Range not valid.");
+            var query = dbc.Users.Where(u => u.Role == "resident").Include(d => d.RedemptionPoints).Include(d => d.DepositPoints)
+                .ThenInclude(d => d.Deposit).ThenInclude(d => d.WasteType).AsQueryable();
+            if (range == "alltime") query = query.OrderByDescending(u => u.DepositPoints.Sum(d => d.Amount));
+            else query = query.OrderByDescending(u => u.ThisMonth.TotalPoints);
             var (error, result, paging) = Helper.Paginate(query, (rec, idx) => new
             {
                 rank = idx + 1,
                 fullName = rec.FullName,
-                totalPoints = rec.TotalPoints,
-                currentBalance = rec.Balance,
-                environmentalImpact = rec.EnvironmentalImpact
+                totalPoints = range == "alltime" ? rec.TotalPoints : rec.ThisMonth.TotalPoints,
+                currentBalance = range == "alltime" ? rec.Balance : rec.ThisMonth.Balance,
+                environmentalImpact = range == "alltime" ? rec.EnvironmentalImpact : rec.ThisMonth.EnvImpact
             }, page, size);
             return Helper.paginate(result, page, paging?.items ?? 0, paging?.totalPage ?? 1, "Leaderboard fetched successfully");
         }

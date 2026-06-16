@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 
 namespace EcoPoinAPI.Controllers
@@ -126,10 +127,20 @@ namespace EcoPoinAPI.Controllers
 
         [HttpGet("history")]
         [Authorize(Roles = "resident")]
-        public ActionResult History(int page = 1, int size = 20)
+        public ActionResult History(int page = 1, int size = 20, string status = "all")
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var query = dbc.RedemptionPoints.Include(rec => rec.Voucher).OrderByDescending(rec => rec.UpdatedAt).Where(rec => rec.ResidentId == userId).AsQueryable();
+            var query = dbc.RedemptionPoints.Include(rec => rec.Voucher).Where(rec => rec.ResidentId == userId).AsQueryable();
+            var allowed = new[] { "unused", "used" };
+            if (allowed.Contains(status))
+            {
+                if (status == "used") query = query.Where(v => v.IsUsed);
+                else query = query.Where(v => !v.IsUsed);
+                query = query.OrderByDescending(rec => rec.UpdatedAt);
+            } else
+            {
+                query = query.OrderByDescending(v => v.IsUsed ? 1 : 0).ThenByDescending(v => v.UpdatedAt);
+            }
             var (error, result, paging) = Helper.Paginate(query, rec => new
             {
                 id = rec.Id,
