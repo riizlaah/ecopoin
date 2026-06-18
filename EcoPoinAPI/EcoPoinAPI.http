@@ -1,0 +1,6 @@
+@EcoPoinAPI_HostAddress = http://localhost:5111
+
+GET {{EcoPoinAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
