@@ -54,17 +54,20 @@ namespace EcoPoinAPI
             var items = query2.Count();
             var data = query2.Skip((page - 1) * size).Take(size);
             var totalPage = (int)Math.Ceiling((decimal)items / size);
-            return json(new
+            return new ObjectResult(new
             {
-                data,
                 message,
+                data,
                 pagination = new
                 {
                     page,
                     totalPage,
                     items
                 }
-            }, message);
+            })
+            {
+                StatusCode = 200
+            };
         }
 
         protected static ObjectResult PaginateQuery<TRes, TModel>(IQueryable<TModel> query, int page, int size, Func<TModel, int, TRes> selector, string message)

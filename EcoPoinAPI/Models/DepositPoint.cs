@@ -28,7 +28,7 @@ public partial class DepositPoint
     public DateTime CreatedAt { get; set; }
 
     [ForeignKey("DepositId")]
-    [InverseProperty("DepositPoints")]
+    [InverseProperty("DepositPoint")]
     public virtual Deposit Deposit { get; set; } = null!;
 
     [ForeignKey("ResidentId")]

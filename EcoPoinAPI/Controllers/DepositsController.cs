@@ -112,11 +112,11 @@ namespace EcoPoinAPI.Controllers
         async public Task<ActionResult> Submit([FromForm] int wasteTypeId, [FromForm] decimal estWeight, IFormFile photo, [FromForm] string? notes = null)
         {
             if (photo == null || photo.Length == 0) return err("Photo required");
-            var allowed = new[] { "image/jpge", "image/png" };
+            var allowed = new[] { "image/jpeg", "image/png" };
             if (!allowed.Contains(photo.ContentType)) return err("Photo type must be JPG/PNG");
             if (wasteTypeId < 1) return err("Waste Type not valid");
             if (estWeight <= 0m) return err("Estimated weight not valid");
-            if (dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
+            if (!dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
             var userId = getUserId();
             await dbc.Deposits.AddAsync(new Deposit
             {
@@ -137,12 +137,12 @@ namespace EcoPoinAPI.Controllers
             if (photo != null)
             {
                 if(photo.Length == 0) err("Photo required");
-                var allowed = new[] { "image/jpge", "image/png" };
+                var allowed = new[] { "image/jpeg", "image/png" };
                 if (!allowed.Contains(photo.ContentType)) return err("Photo type must be JPG/PNG");
             }
             if (wasteTypeId < 1) return err("Waste Type not valid");
             if (estWeight <= 0m) return err("Estimated weight not valid");
-            if (dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
+            if (!dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
             var rec = await dbc.Deposits.FindAsync(id);
             if (rec == null) return err("Deposit not found");
             rec.WasteTypeId = wasteTypeId;
@@ -165,7 +165,7 @@ namespace EcoPoinAPI.Controllers
             }
             if (wasteTypeId < 1) return err("Waste Type not valid");
             if (actWeight <= 0m) return err("Actual weight not valid");
-            if (dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
+            if (!dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
             var rec = await dbc.Deposits.FindAsync(id);
             if (rec == null) return err("Deposit not found");
             rec.OfficerId = getUserId();
