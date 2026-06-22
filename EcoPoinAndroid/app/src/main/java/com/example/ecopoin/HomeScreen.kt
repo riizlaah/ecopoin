@@ -50,77 +50,93 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.ecopoin.ui.theme.Gray1
+import com.example.ecopoin.ui.theme.Green1
 import com.example.ecopoin.ui.theme.Orange1
 import java.text.DecimalFormat
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
     modifier: Modifier,
     onRank: () -> Unit,
     onSubmit: () -> Unit,
-    onVouchers: () -> Unit
+    onVouchers: () -> Unit,
+    onDeposits: () -> Unit
 ) {
     val ctx = LocalContext.current
 
-    LazyColumn(modifier) {
+    Column(modifier) {
 
-        if (HttpClient.profile == null) return@LazyColumn
+        if (HttpClient.profile == null) return@Column
         val profile = HttpClient.profile!!
-        stickyHeader {
-            Row(
-                Modifier
-                    .padding(bottom = 24.dp)
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(12.dp), verticalAlignment = Alignment.CenterVertically
+        Row(
+            Modifier
+                .padding(bottom = 24.dp)
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(12.dp), verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Welcome", color = Color.Gray)
+                Text(
+                    profile.fullName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = MaterialTheme.typography.headlineLarge.fontSize
+                )
+            }
+            IconButton(
+                {
+                    val int = Intent(ctx, MainActivity::class.java)
+                    HttpClient.token = ""
+                    HttpClient.saveToken()
+                    HttpClient.profile = null
+                    HttpClient.myRank = null
+                    ctx.startActivity(int)
+                },
+                Modifier.size(40.dp),
+                shape = CircleShape,
+                colors = IconButtonDefaults.iconButtonColors(containerColor = Color.LightGray)
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Welcome", color = Color.Gray)
-                    Text(
-                        profile.fullName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = MaterialTheme.typography.headlineLarge.fontSize
-                    )
-                }
-                IconButton(
-                    {
-                        val int = Intent(ctx, MainActivity::class.java)
-                        HttpClient.token = ""
-                        HttpClient.saveToken()
-                        HttpClient.profile = null
-                        HttpClient.myRank = null
-                        ctx.startActivity(int)
-                    },
-                    Modifier.size(40.dp),
-                    shape = CircleShape,
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = Color.LightGray)
-                ) {
-                    Icon(painterResource(R.drawable.logout), "Log out", Modifier.rotate(180f))
-                }
-                Spacer(Modifier.width(12.dp))
-                Box(
-                    Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(profile.fullName.first().uppercase(), fontWeight = FontWeight.Bold)
-                }
+                Icon(painterResource(R.drawable.logout), "Log out", Modifier.rotate(180f))
+            }
+            Spacer(Modifier.width(12.dp))
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(profile.fullName.first().uppercase(), fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
-        item {
-            val vouchers = remember { mutableStateListOf<Voucher>() }
+        val vouchers = remember { mutableStateListOf<Voucher>() }
+        val deposits = remember { mutableStateListOf<Deposit>() }
 
-            LaunchedEffect(Unit) {
+        LaunchedEffect(Unit) {
+            if(HttpClient.isOfficer) {
+                val (_, d) = HttpClient.getDeposits(1, 5, "Pending")
+                deposits.addAll(d)
+            } else {
                 val (p, v) = HttpClient.getVouchers(1, 4)
                 if(p != null) {
                     vouchers.clear()
                     vouchers.addAll(v)
                 }
             }
+        }
 
-            Column(Modifier.fillMaxWidth().padding(18.dp)) {
+        LazyColumn(Modifier.fillMaxWidth().padding(18.dp)) {
+            item {
+                if(HttpClient.isOfficer) {
+                    Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Pending Deposits")
+                        TextButton(onDeposits) {
+                            Text("More...")
+                        }
+                    }
+                    return@item
+                }
                 Column(Modifier
                     .fillMaxWidth()
                     .card(MaterialTheme.colorScheme.primary, 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -181,6 +197,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier
                         .weight(1f)
                         .cardBordered()) {
@@ -256,11 +273,36 @@ fun HomeScreen(
                 }
                 LazyVerticalGrid(GridCells.Fixed(2), Modifier
                     .fillMaxWidth()
-                    .heightIn(128.dp, 512.dp)) {
+                    .heightIn(128.dp, 512.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(vouchers) { item ->
                         Column(Modifier.fillMaxWidth().cardBordered()) {
                             Text(item.name, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(12.dp))
                             Text("${thousandFmt(item.pointCost)} points", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Orange1, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            if(HttpClient.isOfficer) {
+                items(deposits) { item ->
+                    Row(Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                        .cardBordered().clickable(onClick = {
+                            val int = Intent(ctx, DepositDetailActivity::class.java).apply {
+                                putExtra("id", item.id)
+                            }
+                            ctx.startActivity(int)
+                        })) {
+                        Column(Modifier.weight(1f)) {
+                            Text(item.wasteType.name, fontWeight = FontWeight.Bold)
+                            val fmt = DateTimeFormatter.ofPattern("dd MMM")
+                            Text("${item.actWeight ?: item.estWeight} kg | ${item.updatedAt.format(fmt)}")
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            val pts = if(item.actPoints == null) "-" else "+${item.actPoints}"
+                            Text(pts, color = Green1, fontWeight = FontWeight.Medium, textAlign = TextAlign.End)
+                            Text(item.status, Modifier.card(corner(50), Gray1, 12.dp))
                         }
                     }
                 }

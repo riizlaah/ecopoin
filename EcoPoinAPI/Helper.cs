@@ -78,17 +78,20 @@ namespace EcoPoinAPI
             var items = query2.Count();
             var data = query2.Skip((page - 1) * size).Take(size);
             var totalPage = (int)Math.Ceiling((decimal)items / size);
-            return json(new
+            return new ObjectResult(new
             {
-                data,
                 message,
+                data,
                 pagination = new
                 {
                     page,
                     totalPage,
                     items
                 }
-            }, message);
+            })
+            {
+                StatusCode = 200
+            };
         }
 
         protected string RandStr(int len)

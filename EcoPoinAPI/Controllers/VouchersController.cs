@@ -64,7 +64,7 @@ namespace EcoPoinAPI.Controllers
             var userId = getUserId();
             var voucher = dbc.Vouchers.Find(id);
             if (voucher == null) return err("Voucher not found", 404);
-            var user = dbc.Users.Include(u => u.DepositResidents).Include(u => u.RedemptionPoints).Include(u => u.DepositResidents).ThenInclude(d => d.WasteType).FirstOrDefault(u => u.Id == userId);
+            var user = dbc.Users.Include(u => u.DepositPoints).Include(u => u.RedemptionPoints).FirstOrDefault(u => u.Id == userId);
             if (user == null) return err("User not found", 404);
             if (user.TotalBalance <= voucher.PointCost) return err($"Insufficient points. Required: {voucher.PointCost}, available: {user.TotalBalance}");
             dbc.RedemptionPoints.Add(new RedemptionPoint
@@ -80,7 +80,7 @@ namespace EcoPoinAPI.Controllers
             return msg("Voucher redeemed successfully");
         }
 
-        [HttpGet("{code}")]
+        [HttpGet("{code}/check")]
         [Authorize]
         public ActionResult Detail(string code)
         {
@@ -110,7 +110,7 @@ namespace EcoPoinAPI.Controllers
             }, "Redeemed voucher detail fetched");
         }
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{id}/use")]
         [Authorize]
         public ActionResult Use(int id)
         {
@@ -119,6 +119,7 @@ namespace EcoPoinAPI.Controllers
             if (rp.IsUsed) return err("Voucher has been used");
             rp.IsUsed = true;
             rp.UpdatedAt = DateTime.Now;
+            dbc.SaveChanges();
             return msg("Voucher used successfully");
         }
     }

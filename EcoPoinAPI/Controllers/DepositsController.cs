@@ -27,9 +27,9 @@ namespace EcoPoinAPI.Controllers
             var query = dbc.Deposits.Include(d => d.Resident).Include(d => d.WasteType).Include(d => d.DepositPoint).OrderByDescending(d => d.UpdatedAt).AsQueryable();
             if(role == "officer")
             {
-                query = query.Where(d => d.OfficerId == userId);
+                query = query.Where(d => d.OfficerId == userId || d.OfficerId == null);
                 if (status != "All") query = query.Where(d => d.Status == status);
-                else query = query.Where(d => d.Status == "Pending");
+                else query = query.OrderByDescending(d => d.Status == "Pending" ? 1 : 0).ThenByDescending(d => d.UpdatedAt);
             }
             if(role == "resident")
             {
@@ -132,7 +132,7 @@ namespace EcoPoinAPI.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        async public Task<ActionResult> Update(int id, [FromForm] int wasteTypeId, [FromForm] decimal estWeight, IFormFile photo, [FromForm] string? notes = null)
+        async public Task<ActionResult> Update(int id, [FromForm] int wasteTypeId, [FromForm] decimal estWeight, IFormFile? photo, [FromForm] string? notes = null)
         {
             if (photo != null)
             {
@@ -147,6 +147,7 @@ namespace EcoPoinAPI.Controllers
             if (rec == null) return err("Deposit not found");
             rec.WasteTypeId = wasteTypeId;
             rec.EstimatedWeight = estWeight;
+            rec.Notes = notes;
             rec.UpdatedAt = DateTime.Now;
             if(photo != null) rec.PhotoPath = await Upload(uploadDir, photo, rec.PhotoPath);
             await dbc.SaveChangesAsync();
@@ -155,7 +156,7 @@ namespace EcoPoinAPI.Controllers
 
         [HttpPatch("{id}/verify")]
         [Authorize(Roles = "officer")]
-        async public Task<ActionResult> Update(int id, [FromForm] int wasteTypeId, [FromForm] decimal actWeight, IFormFile photo, [FromForm] bool verify, [FromForm] string? rejectionReason = null)
+        async public Task<ActionResult> Verify(int id, [FromForm] int wasteTypeId, [FromForm] decimal actWeight, IFormFile? photo, [FromForm] bool verify, [FromForm] string? rejectionReason = null)
         {
             if (photo != null)
             {
@@ -166,7 +167,7 @@ namespace EcoPoinAPI.Controllers
             if (wasteTypeId < 1) return err("Waste Type not valid");
             if (actWeight <= 0m) return err("Actual weight not valid");
             if (!dbc.WasteTypes.Any(w => w.Id == wasteTypeId)) return err("Waste Type not found", 404);
-            var rec = await dbc.Deposits.FindAsync(id);
+            var rec = await dbc.Deposits.Include(d => d.WasteType).FirstOrDefaultAsync(d => d.Id == id);
             if (rec == null) return err("Deposit not found");
             rec.OfficerId = getUserId();
             rec.WasteTypeId = wasteTypeId;
@@ -174,6 +175,19 @@ namespace EcoPoinAPI.Controllers
             rec.UpdatedAt = DateTime.Now;
             rec.Status = verify ? "Verified" : "Rejected";
             if (photo != null) rec.PhotoPath = await Upload(uploadDir, photo, rec.PhotoPath);
+            if(verify)
+            {
+                await dbc.DepositPoints.AddAsync(new DepositPoint
+                {
+                    DepositId = rec.Id,
+                    Amount = (int)Math.Round(rec.WasteType.PointTariff * rec.ActualWeight ?? 0),
+                    PointTariff = rec.WasteType.PointTariff,
+                    ResidentId = rec.ResidentId,
+                });
+            } else
+            {
+                rec.RejectionReason = rejectionReason;
+            }
             await dbc.SaveChangesAsync();
             return msg("Deposit updated");
         }

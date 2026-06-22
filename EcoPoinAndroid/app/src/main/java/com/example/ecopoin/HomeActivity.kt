@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -61,13 +62,30 @@ class HomeActivity : ComponentActivity() {
                             .background(Color(0xfff8fafc)),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        val tabs = listOf(
-                            Pair("Home", R.drawable.house),
-                            Pair("Upload", R.drawable.upload),
-                            Pair("History", R.drawable.clock),
-                            Pair("Reward", R.drawable.gift),
-                            Pair("Ranking", R.drawable.trophy),
-                        )
+                        LaunchedEffect(Unit) {
+                            HttpClient.me()
+                            HttpClient.myRank()
+                        }
+
+                        if(HttpClient.profile == null) return@Column
+                        val tabs by remember {
+                            derivedStateOf {
+                                if(!HttpClient.isOfficer) {
+                                    listOf(
+                                        Pair("Home", R.drawable.house),
+                                        Pair("Upload", R.drawable.upload),
+                                        Pair("History", R.drawable.clock),
+                                        Pair("Reward", R.drawable.gift),
+                                        Pair("Ranking", R.drawable.trophy),
+                                    )
+                                } else {
+                                    listOf(
+                                        Pair("Home", R.drawable.house),
+                                        Pair("History", R.drawable.clock),
+                                    )
+                                }
+                            }
+                        }
                         var selectedIdx by remember { mutableIntStateOf(0) }
                         val backStack = remember { mutableStateListOf(0) }
 
@@ -79,10 +97,6 @@ class HomeActivity : ComponentActivity() {
                            back()
                         }
 
-                        LaunchedEffect(Unit) {
-                            HttpClient.me()
-                            HttpClient.myRank()
-                        }
 
                         LaunchedEffect(selectedIdx) {
                             if(backStack.isEmpty()) backStack.add(selectedIdx)
@@ -90,11 +104,17 @@ class HomeActivity : ComponentActivity() {
                         }
 
                         when(selectedIdx) {
-                            0 -> HomeScreen(Modifier.weight(1f), {selectedIdx = 4}, {selectedIdx = 1}, {selectedIdx = 3})
-                            1 -> SubmitScreen(Modifier.weight(1f), {back()})
-                            2 -> {}
-                            3 -> {}
-                            4 -> {}
+                            0 -> HomeScreen(Modifier.weight(1f), {selectedIdx = 4}, {selectedIdx = 1}, {selectedIdx = 3}, {selectedIdx = 2})
+                            1 -> {
+                                if(HttpClient.isOfficer) {
+                                    HistoryScreen(Modifier.weight(1f))
+                                } else {
+                                    SubmitScreen(Modifier.weight(1f), {back()})
+                                }
+                            }
+                            2 -> HistoryScreen(Modifier.weight(1f))
+                            3 -> RewardScreen(Modifier.weight(1f))
+                            4 -> RankingScreen(Modifier.weight(1f))
                         }
 
                         PrimaryTabRow(selectedIdx, containerColor = Color.White) {
